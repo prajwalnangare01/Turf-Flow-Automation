@@ -43,26 +43,26 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// CORS lockdown: whitelist allowed origin URLs
-const clientOrigin = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
-const allowedOrigins = [
-  clientOrigin,
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:5000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:5000'
-];
+// Serve production frontend assets first so static files (.js, .css, images) are never blocked by API CORS
+const distPath = path.resolve(__dirname, '../../../dist');
+app.use(express.static(distPath));
 
+// CORS configuration for REST APIs and WebSockets
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+    if (!origin) return callback(null, true);
+    if (
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:') ||
+      origin.endsWith('.onrender.com') ||
+      origin.includes('onrender.com')
+    ) {
       return callback(null, true);
     }
-    if (process.env.NODE_ENV === 'production') {
-      logger.warn({ blockedOrigin: origin }, 'Blocked request by CORS policy');
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    const clientOrigin = (process.env.CLIENT_URL || '').replace(/\/$/, '');
+    const baseOrigin = (process.env.BASE_URL || '').replace(/\/$/, '');
+    if ((clientOrigin && origin === clientOrigin) || (baseOrigin && origin === baseOrigin)) {
+      return callback(null, true);
     }
     return callback(null, true);
   },
