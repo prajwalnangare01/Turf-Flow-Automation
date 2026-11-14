@@ -22,7 +22,7 @@ import { formatTimeRange12h, formatTime12hPlain, formatTimeRange12hPlain, format
 import { getVenueDateString, getVenueNow } from '../../utils/venueTime';
 import { DEFAULT_SPORT_FALLBACK_IMAGE } from '../../utils/imageUpload';
 import { CustomerPortalSkeleton, PitchGridSkeleton, SportCardsSkeleton } from '../common/SkeletonLoaders';
-import { ChevronRight, Search, UserCheck, User, LogOut, ShieldCheck, Clock, Calendar, Lock, MapPin, Phone, FileText, RotateCcw, X } from 'lucide-react';
+import { ChevronRight, Search, UserCheck, User, LogOut, ShieldCheck, Clock, Calendar, Lock, MapPin, Phone, FileText, RotateCcw, X, ArrowLeft } from 'lucide-react';
 
 interface CustomerAppProps {
   onSwitchToAdmin: () => void;
