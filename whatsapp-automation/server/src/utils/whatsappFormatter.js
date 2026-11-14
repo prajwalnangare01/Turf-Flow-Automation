@@ -28,6 +28,37 @@ export class WhatsAppFormatter {
   }
 
   /**
+   * Helper to resolve sport label with emoji for a booking or sportId
+   */
+  static getSportLabel(bookingOrSportId) {
+    if (!bookingOrSportId) return '';
+    const allSports = store.getSports();
+    let sportId = typeof bookingOrSportId === 'string'
+      ? bookingOrSportId
+      : (bookingOrSportId.sport_id || bookingOrSportId.sport || bookingOrSportId.sportId);
+
+    if (!sportId && typeof bookingOrSportId === 'object' && bookingOrSportId.court_id) {
+      const courts = store.getCourts();
+      const court = courts.find(c => c.id === bookingOrSportId.court_id);
+      sportId = court?.sport_ids?.[0];
+    }
+
+    if (sportId) {
+      const cleanId = String(sportId).toLowerCase();
+      const found = allSports.find(s => 
+        s.id.toLowerCase() === cleanId || 
+        s.name.toLowerCase() === cleanId || 
+        cleanId.includes(s.id.replace('sp-', '').toLowerCase()) ||
+        s.id.replace('sp-', '').toLowerCase() === cleanId
+      );
+      if (found) {
+        return `${found.icon ? found.icon + ' ' : ''}${found.name}`;
+      }
+    }
+    return '';
+  }
+
+  /**
    * Convert any date (YYYY-MM-DD, ISO string, Date) to DD/MM/YYYY
    */
   static formatDate(dateStr) {
@@ -118,9 +149,11 @@ export class WhatsAppFormatter {
     const formattedDate = this.formatDate(booking.booking_date);
     const start12 = this.formatTime(booking.start_time);
     const end12 = this.formatTime(booking.end_time);
+    const sportLabel = this.getSportLabel(booking) || (booking.court_id ? this.getCourtSportsLabel({ id: booking.court_id }) : '');
 
     return `💳 *RESERVATION PENDING PAYMENT*\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      (sportLabel ? `🏅 *Sport:* ${sportLabel}\n` : '') +
       `🏟️ *Court:* ${booking.court_name}\n` +
       `📅 *Date:* ${formattedDate}\n` +
       `⏰ *Time:* ${start12} — ${end12}\n` +
@@ -146,6 +179,7 @@ export class WhatsAppFormatter {
       const isConfirmed = b.status === 'confirmed';
       const otpCode = WhatsAppFormatter.getBookingGatePassOtp(b);
       const formattedDate = this.formatDate(b.booking_date);
+      const sportLabel = this.getSportLabel(b) || (b.court_id ? this.getCourtSportsLabel({ id: b.court_id }) : '');
       const validSlots = Array.isArray(b.all_slots) ? b.all_slots.filter(s => s.start_time && s.end_time) : [];
       const slotTimeStr = (b.start_time && b.end_time)
         ? `${this.formatTime(b.start_time)} — ${this.formatTime(b.end_time)}`
@@ -155,6 +189,7 @@ export class WhatsAppFormatter {
 
       if (isConfirmed) {
         out += `✅ *CONFIRMED MATCH RESERVATION*\n`;
+        if (sportLabel) out += `🏅 *Sport:* ${sportLabel}\n`;
         out += `🏟️ ${b.court_name}\n`;
         out += `📅 ${formattedDate} | ⏰ ${slotTimeStr}\n`;
         out += `🔑 *Gate Pass OTP:* *${otpCode}*\n`;
@@ -163,6 +198,7 @@ export class WhatsAppFormatter {
         out += `⚙️ _To cancel/reschedule, reply: "Cancel ${otpCode}"_\n`;
       } else {
         out += `⏳ *PENDING RESERVATION*\n`;
+        if (sportLabel) out += `🏅 *Sport:* ${sportLabel}\n`;
         out += `🏟️ ${b.court_name}\n`;
         out += `📅 ${formattedDate} | ⏰ ${slotTimeStr}\n`;
         out += `💰 ₹${b.total_amount} (5-min hold active)\n`;
