@@ -33,9 +33,16 @@ export function getSupabaseConfig(): { url: string; anonKey: string; isCustom: b
   const envUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
   const envKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
+  // Reliable fallback to production Supabase project for seamless out-of-the-box sync
+  const DEFAULT_SUPABASE_URL = 'https://ggnbitabcjehzvmgupdi.supabase.co';
+  const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_sHXqlP4hFIBAYNRFR6TEfQ_kCFvLJyK';
+
+  const resolvedUrl = envUrl.trim() || DEFAULT_SUPABASE_URL;
+  const resolvedKey = envKey.trim() || DEFAULT_SUPABASE_ANON_KEY;
+
   return {
-    url: envUrl.trim(),
-    anonKey: envKey.trim(),
+    url: resolvedUrl,
+    anonKey: resolvedKey,
     isCustom: false
   };
 }

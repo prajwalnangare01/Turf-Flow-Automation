@@ -212,7 +212,12 @@ export class WhatsAppFormatter {
         ? `~₹${Math.max(peakRate, pkOffer)}~ ₹${Math.min(peakRate, pkOffer)}`
         : `₹${peakRate}`;
       const sportLabel = this.getCourtSportsLabel(c);
-      out += `  • *${c.name}*${sportLabel ? ` (${sportLabel})` : ''}:${origText} ₹${c.base_price_per_hour}/hr (Weekday) | ${effectivePeak}/hr (Peak 6:00 PM - 11:00 PM)\n`;
+      const weekendRate = c.weekend_price_per_hour || c.saturday_price_per_hour || c.sunday_price_per_hour;
+      const weekendText = weekendRate && weekendRate !== c.base_price_per_hour ? ` | ₹${weekendRate}/hr (Weekend)` : '';
+      const peakTimeText = (c.peak_start_time && c.peak_end_time)
+        ? `Peak ${this.formatTime(c.peak_start_time)} - ${this.formatTime(c.peak_end_time)}`
+        : 'Peak';
+      out += `  • *${c.name}*${sportLabel ? ` (${sportLabel})` : ''}:${origText} ₹${c.base_price_per_hour}/hr (Weekday)${weekendText} | ${effectivePeak}/hr (${peakTimeText})\n`;
     }
 
     out += `\n🔄 *Cancellation Policy:*\n` +

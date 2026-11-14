@@ -611,7 +611,37 @@ apiRouter.get('/bookings/lookup', (req, res) => {
  * 10. List All Bookings (Admin / Sync)
  */
 apiRouter.get('/bookings', optionalAuth, (req, res) => {
-  res.json({ success: true, bookings: store.getBookings() });
+  const customers = store.getCustomers();
+  const courts = store.getCourts();
+  const enriched = store.getBookings().map(b => {
+    const cust = customers.find(c => c.id === b.customer_id);
+    const court = courts.find(c => c.id === b.court_id);
+    return {
+      ...b,
+      customer_name: b.customer_name || cust?.name || 'Customer',
+      customer_phone: b.customer_phone || cust?.phone || '',
+      court_name: b.court_name || court?.name || 'Court'
+    };
+  });
+  res.json({ success: true, count: enriched.length, bookings: enriched });
+});
+
+/**
+ * 10a. List All Customers
+ */
+apiRouter.get('/customers', optionalAuth, (req, res) => {
+  res.json({ success: true, count: store.getCustomers().length, customers: store.getCustomers() });
+});
+
+/**
+ * 10a2. Client Configuration Endpoint
+ */
+apiRouter.get('/config', (req, res) => {
+  res.json({
+    success: true,
+    supabaseUrl: process.env.SUPABASE_URL || 'https://ggnbitabcjehzvmgupdi.supabase.co',
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || 'sb_publishable_sHXqlP4hFIBAYNRFR6TEfQ_kCFvLJyK'
+  });
 });
 
 /**

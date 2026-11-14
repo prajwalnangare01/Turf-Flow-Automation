@@ -39,6 +39,8 @@ export class SlotEngine {
     if (isNaN(y) || isNaN(m) || isNaN(d)) return [];
     const slotDate = new Date(y, m - 1, d);
     const dayOfWeek = slotDate.getDay(); // 0 = Sun, 6 = Sat
+    const dayType = (dayOfWeek === 0 || dayOfWeek === 6) ? 'weekend' : 'weekday';
+    const pricingRules = (typeof store.getPricingRules === 'function' ? store.getPricingRules() : []).filter(r => r.court_id === court.id && r.day_type === dayType);
 
     // Base pricing based on day of week
     // Check if promotional offer is active for dateStr (optional end date)
@@ -103,7 +105,8 @@ export class SlotEngine {
       // Peak Hours Check
       if (court.peak_enabled && court.peak_start_time && court.peak_end_time && court.peak_price_per_hour) {
         const pStart = this.timeToMinutes(court.peak_start_time);
-        const pEnd = this.timeToMinutes(court.peak_end_time);
+        let pEnd = this.timeToMinutes(court.peak_end_time);
+        if (pEnd <= pStart) pEnd += 1440;
         if (cursor >= pStart && cursor < pEnd) {
           const pkRate = court.peak_price_per_hour;
           const pkOffer = isOfferActiveForDate ? court.peak_offer_price_per_hour : undefined;
@@ -116,6 +119,23 @@ export class SlotEngine {
             slotOriginalPrice = undefined;
           }
           isPeak = true;
+        }
+      }
+
+      // Check Custom Granular Pricing Rules (ONLY if slot was NOT already governed by Pitch Peak Configuration)
+      if (!isPeak) {
+        for (const rule of pricingRules) {
+          const rStart = this.timeToMinutes(rule.start_time);
+          let rEnd = this.timeToMinutes(rule.end_time);
+          if (rEnd <= rStart) rEnd += 1440;
+          if (rStart <= openMins && rEnd >= closeMins) {
+            continue;
+          }
+          if (cursor >= rStart && cursor < rEnd) {
+            slotPrice = rule.price;
+            isPeak = true;
+            break;
+          }
         }
       }
 

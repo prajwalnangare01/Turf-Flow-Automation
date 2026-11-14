@@ -99,13 +99,15 @@ export const BookingListView: React.FC<BookingListViewProps> = ({ currentAdmin }
       const cust = customers.find(c => c.id === b.customer_id);
       const bRef = b.booking_ref || '';
       const otpCode = getBookingGatePassOtp(b);
+      const custName = (cust?.name || (b as any).customer_name || '').toLowerCase();
+      const custPhone = cust?.phone || (b as any).customer_phone || '';
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         !q ||
         (bRef && bRef.toLowerCase().includes(q)) ||
         otpCode.includes(q) ||
-        (cust?.name && cust.name.toLowerCase().includes(q)) ||
-        (cust?.phone && cust.phone.includes(q));
+        custName.includes(q) ||
+        custPhone.includes(q);
 
       const matchesStatus = 
         statusFilter === 'all' || 
@@ -118,8 +120,14 @@ export const BookingListView: React.FC<BookingListViewProps> = ({ currentAdmin }
       return matchesSearch && matchesStatus && matchesSource && matchesDate && matchesRetention;
     })
     .sort((a, b) => {
-      const timeA = new Date(`${a.booking_date || ''}T${a.start_time || '00:00'}:00`).getTime() || 0;
-      const timeB = new Date(`${b.booking_date || ''}T${b.start_time || '00:00'}:00`).getTime() || 0;
+      const parseSlotTime = (dateStr?: string, timeStr?: string) => {
+        if (!dateStr) return 0;
+        const cleanTime = (timeStr || '00:00').slice(0, 5);
+        const parsed = new Date(`${dateStr}T${cleanTime}:00`).getTime();
+        return isNaN(parsed) ? 0 : parsed;
+      };
+      const timeA = parseSlotTime(a.booking_date, a.start_time);
+      const timeB = parseSlotTime(b.booking_date, b.start_time);
 
       if (sortOrder === 'latest') {
         return timeB - timeA;
@@ -310,8 +318,8 @@ export const BookingListView: React.FC<BookingListViewProps> = ({ currentAdmin }
                         OTP: {otpCode}
                       </span>
                     </div>
-                    <h3 className="font-headline font-bold text-base text-on-surface mt-1">{cust?.name || 'Unknown'}</h3>
-                    <p className="text-xs text-on-surface-variant font-mono">{formatPhoneNumber(cust?.phone) || 'N/A'}</p>
+                    <h3 className="font-headline font-bold text-base text-on-surface mt-1">{cust?.name || (b as any).customer_name || 'Customer'}</h3>
+                    <p className="text-xs text-on-surface-variant font-mono">{formatPhoneNumber(cust?.phone || (b as any).customer_phone) || 'N/A'}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-headline font-extrabold text-lg text-primary">₹{b.total_amount || 0}</p>
@@ -470,8 +478,8 @@ export const BookingListView: React.FC<BookingListViewProps> = ({ currentAdmin }
                       </span>
                     </td>
                     <td className="p-3">
-                      <div className="font-headline font-bold text-on-surface">{cust?.name || 'Unknown'}</div>
-                      <div className="text-[10px] text-on-surface-variant">{formatPhoneNumber(cust?.phone) || 'N/A'}</div>
+                      <div className="font-headline font-bold text-on-surface">{cust?.name || (b as any).customer_name || 'Customer'}</div>
+                      <div className="text-[10px] text-on-surface-variant">{formatPhoneNumber(cust?.phone || (b as any).customer_phone) || 'N/A'}</div>
                     </td>
                     <td className="p-3 font-semibold text-on-surface">{court?.name || 'Unknown Court'}</td>
                     <td className="p-3 font-mono">

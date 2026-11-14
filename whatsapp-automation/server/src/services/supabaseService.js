@@ -1,6 +1,7 @@
 // Supabase Synchronization & Realtime Service for TurfFlow
 import { getSupabase, isSupabaseConfigured } from '../data/supabaseClient.js';
 import { WhatsAppFormatter } from '../utils/whatsappFormatter.js';
+import { store } from '../data/store.js';
 
 export class SupabaseService {
   static realtimeChannel = null;
@@ -134,7 +135,20 @@ export class SupabaseService {
         }));
       }
 
-      console.log(`✅ Supabase hydration complete! Loaded ${store.courts.length} courts, ${store.customers.length} customers, ${store.bookings.length} bookings, ${store.blockedSlots?.length || 0} blocked slots.`);
+      // 8. Fetch Pricing Rules
+      const { data: pRules, error: prErr } = await supabase.from('pricing_rules').select('*');
+      if (!prErr && pRules) {
+        store.pricingRules = pRules.map(pr => ({
+          id: pr.id,
+          court_id: pr.court_id,
+          day_type: pr.day_type,
+          start_time: typeof pr.start_time === 'string' ? pr.start_time.slice(0, 5) : pr.start_time,
+          end_time: typeof pr.end_time === 'string' ? pr.end_time.slice(0, 5) : pr.end_time,
+          price: Number(pr.price)
+        }));
+      }
+
+      console.log(`✅ Supabase hydration complete! Loaded ${store.courts.length} courts, ${store.customers.length} customers, ${store.bookings.length} bookings, ${store.blockedSlots?.length || 0} blocked slots, ${store.pricingRules?.length || 0} pricing rules.`);
       return true;
     } catch (err) {
       console.warn('⚠️ Supabase hydration warning:', err.message);
@@ -364,6 +378,14 @@ export class SupabaseService {
       if (error) {
         console.error('❌ Supabase updateBooking error:', error.message);
         return null;
+      }
+      if (!data || data.length === 0) {
+        // If booking row did not exist yet, find in memory and insert it
+        const b = store.getBookings().find(item => item.id === bookingId || item.booking_ref === bookingId);
+        if (b) {
+          console.log(`⚡ [Supabase fallback] Booking ${bookingId} not found in DB during update. Inserting fresh record...`);
+          return await SupabaseService.insertBooking({ ...b, ...updates });
+        }
       }
       return data?.[0] || null;
     } catch (err) {

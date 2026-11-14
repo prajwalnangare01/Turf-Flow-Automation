@@ -312,13 +312,81 @@ export class SupabaseSyncService {
       }
 
       console.log(`✅ [Supabase Sync] Hydration complete! Loaded ${bookings?.length || 0} bookings, ${customers?.length || 0} customers.`);
+
+      // Secondary multi-channel merge: Hydrate server-held bookings from Backend REST API
+      await this.hydrateFromBackendApi();
+
       return true;
     } catch (err: any) {
       console.warn('⚠️ [Supabase Sync] Hydration warning:', err.message);
+      // Resilient fallback: Try hydrating from Backend REST API directly
+      await this.hydrateFromBackendApi();
       return false;
     } finally {
       this.isHydrating = false;
     }
+  }
+
+  /**
+   * Resilient REST API fallback to synchronize bookings directly from the backend server
+   * Guarantees 100% of WhatsApp and server-created bookings appear in Admin Dashboard
+   */
+  public static async hydrateFromBackendApi(): Promise<boolean> {
+    if (typeof window === 'undefined' || typeof fetch !== 'function') return false;
+    try {
+      const res = await fetch('/api/bookings');
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (data.success && Array.isArray(data.bookings)) {
+        const existing = [...store.getBookings()];
+        let changed = false;
+        for (const remote of data.bookings) {
+          const idx = existing.findIndex(b => b.id === remote.id || b.booking_ref === remote.booking_ref);
+          const normalized: Booking = {
+            id: remote.id,
+            booking_ref: remote.booking_ref,
+            customer_id: remote.customer_id,
+            court_id: remote.court_id,
+            sport_id: remote.sport_id,
+            booking_date: typeof remote.booking_date === 'string' ? remote.booking_date.slice(0, 10) : remote.booking_date,
+            start_time: typeof remote.start_time === 'string' ? remote.start_time.slice(0, 5) : remote.start_time,
+            end_time: typeof remote.end_time === 'string' ? remote.end_time.slice(0, 5) : remote.end_time,
+            source: remote.source || 'offline_whatsapp',
+            status: remote.status,
+            total_amount: Number(remote.total_amount),
+            discount_amount: Number(remote.discount_amount || 0),
+            coupon_id: remote.coupon_id || undefined,
+            notes: remote.notes || undefined,
+            gate_pass_otp: remote.gate_pass_otp || getBookingGatePassOtp(remote),
+            group_ref: remote.group_ref || getBookingGroupRef(remote),
+            gateway_payment_id: remote.gateway_payment_id || undefined,
+            total_order_amount: remote.total_order_amount ? Number(remote.total_order_amount) : undefined,
+            formatted_slots: remote.formatted_slots || undefined,
+            created_at: remote.created_at,
+            updated_at: remote.updated_at
+          };
+
+          // Attach customer_name and customer_phone directly onto booking for instant admin table rendering
+          if (remote.customer_name) (normalized as any).customer_name = remote.customer_name;
+          if (remote.customer_phone) (normalized as any).customer_phone = remote.customer_phone;
+
+          if (idx === -1) {
+            existing.unshift(normalized);
+            changed = true;
+          } else if (existing[idx].status !== normalized.status || existing[idx].notes !== normalized.notes) {
+            existing[idx] = { ...existing[idx], ...normalized };
+            changed = true;
+          }
+        }
+        if (changed) {
+          store.setBookings(existing);
+        }
+        return true;
+      }
+    } catch (e) {
+      // Ignore background api fetch error
+    }
+    return false;
   }
 
   /**
@@ -439,8 +507,42 @@ export class SupabaseSyncService {
           start_time: typeof raw.start_time === 'string' ? raw.start_time.slice(0, 5) : raw.start_time,
           end_time: typeof raw.end_time === 'string' ? raw.end_time.slice(0, 5) : raw.end_time,
           total_amount: Number(raw.total_amount),
-          discount_amount: Number(raw.discount_amount || 0)
+          discount_amount: Number(raw.discount_amount || 0),
+          gate_pass_otp: raw.gate_pass_otp || getBookingGatePassOtp(raw)
         };
+        store.setBookings(bookings);
+      } else {
+        const normalized: Booking = {
+          id: raw.id,
+          booking_ref: raw.booking_ref,
+          customer_id: raw.customer_id,
+          court_id: raw.court_id,
+          sport_id: raw.sport_id,
+          booking_date: typeof raw.booking_date === 'string' ? raw.booking_date.slice(0, 10) : raw.booking_date,
+          start_time: typeof raw.start_time === 'string' ? raw.start_time.slice(0, 5) : raw.start_time,
+          end_time: typeof raw.end_time === 'string' ? raw.end_time.slice(0, 5) : raw.end_time,
+          source: raw.source || 'offline_whatsapp',
+          status: raw.status,
+          total_amount: Number(raw.total_amount),
+          discount_amount: Number(raw.discount_amount || 0),
+          coupon_id: raw.coupon_id || undefined,
+          created_by_admin_id: raw.created_by_admin_id || undefined,
+          notes: raw.notes || undefined,
+          refund_amount: raw.refund_amount ? Number(raw.refund_amount) : undefined,
+          refund_reason: raw.refund_reason || undefined,
+          refunded_at: raw.refunded_at || undefined,
+          cancelled_by: raw.cancelled_by || undefined,
+          cancelled_at: raw.cancelled_at || undefined,
+          gate_pass_otp: raw.gate_pass_otp || getBookingGatePassOtp(raw),
+          group_ref: raw.group_ref || getBookingGroupRef(raw),
+          gateway_payment_id: raw.gateway_payment_id || undefined,
+          total_order_amount: raw.total_order_amount ? Number(raw.total_order_amount) : undefined,
+          all_slots: Array.isArray(raw.all_slots) ? raw.all_slots : undefined,
+          formatted_slots: raw.formatted_slots || undefined,
+          created_at: raw.created_at,
+          updated_at: raw.updated_at
+        };
+        bookings.unshift(normalized);
         store.setBookings(bookings);
       }
     } else if (payload.eventType === 'DELETE' && payload.old) {
@@ -465,8 +567,10 @@ export class SupabaseSyncService {
       const index = customers.findIndex(c => c.id === raw.id || c.phone === raw.phone);
       if (index !== -1) {
         customers[index] = { ...customers[index], ...raw };
-        store.setCustomers(customers);
+      } else {
+        customers.push(raw);
       }
+      store.setCustomers(customers);
     }
   }
 

@@ -153,6 +153,7 @@ class Store {
     this.bookings = JSON.parse(JSON.stringify(DEFAULT_BOOKINGS));
     this.payments = [];
     this.blockedSlots = [];
+    this.pricingRules = [];
     this.locks = new Map(); // key: `${court_id}:${date}:${start_time}`, value: { expires_at, locked_by }
     this.notifications = [];
   }
@@ -170,6 +171,8 @@ class Store {
   }
   getSports() { return this.sports; }
   getCourts() { return this.courts; }
+  getPricingRules() { return this.pricingRules || []; }
+  setPricingRules(rules) { this.pricingRules = rules || []; }
   getCancellationPolicies() { return this.cancellationPolicies; }
   getCustomers() { return this.customers; }
   setCustomers(customers) { this.customers = customers; }
