@@ -1,11 +1,12 @@
 # =============================================================================
-# Render Blueprint Specification for TurfFlow Platform
-# Hosts: React Frontend + REST API + WhatsApp AI Agent + Realtime Webhooks
+# Render Blueprint Specification for TurfFlow Automation SKU
+# Hosts: Admin Dashboard + Static Preview + WhatsApp AI Agent + Webhooks
+# Repository: https://github.com/prajwalnangare01/Turf-Flow-Automation.git
 # =============================================================================
 
 services:
   - type: web
-    name: turfflow-platform
+    name: turfflow-automation
     env: node
     plan: starter # Starter ($7/mo) recommended for always-on WhatsApp WebSocket & persistent disk
     region: singapore # Close to India (low latency for Razorpay & WhatsApp)
@@ -21,9 +22,9 @@ services:
       - key: WHATSAPP_SESSION_PATH
         value: /tmp/whatsapp_session # Backed up automatically to Supabase PostgreSQL
       - key: BASE_URL
-        sync: false # e.g. https://turfflow-platform.onrender.com
+        sync: false # e.g. https://turfflow-automation.onrender.com
       - key: CLIENT_URL
-        sync: false # e.g. https://turfflow-platform.onrender.com
+        sync: false # e.g. https://turfflow-automation.onrender.com
       - key: WHATSAPP_PHONE_NUMBER
         sync: false # e.g. 919876543210 (without + sign)
       - key: JWT_SECRET

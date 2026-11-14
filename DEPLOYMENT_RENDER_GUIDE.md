@@ -1,14 +1,16 @@
-# 🚀 Deploying TurfFlow & WhatsApp Automation on Render
+# 🚀 Deploying TurfFlow Automation on Render
 
-This guide walks you through deploying the complete **TurfFlow Multi-Channel Booking Platform** (React Web App, Express API, Razorpay Gateway, and WhatsApp Multi-Device AI Agent) to **Render.com**.
+This guide walks you through deploying the **TurfFlow Automation SKU** (Executive Admin Dashboard, Static Storefront Preview, Express API, Razorpay Gateway, and WhatsApp Multi-Device AI Agent) to **Render.com** as a new independent project.
+
+Repository: `https://github.com/prajwalnangare01/Turf-Flow-Automation.git`
 
 ---
 
 ## 🏗️ 1. Architecture on Render
 
-TurfFlow is designed with a **Unified Single-Service Architecture**:
-* **Frontend**: React + Vite + Tailwind is compiled into `dist/` and served directly by the Express server.
-* **Backend API & Webhooks**: Express handles `/api/*` and Razorpay webhooks (`/api/webhooks/razorpay`).
+TurfFlow Automation uses a **Unified Single-Service Architecture**:
+* **Frontend**: React + Vite + Tailwind is compiled into `dist/` (defaults to Admin Dashboard + Static Preview mode) and served directly by the Express server.
+* **Backend API & Webhooks**: Express handles `/api/*` and Razorpay payment webhooks.
 * **WhatsApp Automation**: Uses `@whiskeysockets/baileys` to maintain an active multi-device WebSocket connection to WhatsApp servers directly within the Node.js process.
 
 ```
@@ -50,19 +52,19 @@ Internet  ───────►│  Express Server (Port 10000 / $PORT)      
 If you prefer setting it up manually from the Render dashboard:
 
 1. Click **New +** ➔ **Web Service**.
-2. Connect your Git repository.
+2. Connect your Git repository (`prajwalnangare01/Turf-Flow-Automation`).
 3. Configure the settings:
-   * **Name**: `turfflow-platform`
+   * **Name**: `turfflow-automation`
    * **Region**: `Singapore` (Recommended for lowest latency to India)
    * **Branch**: `main`
    * **Runtime**: `Node`
    * **Build Command**:
      ```bash
-     npm install && npm run build && cd whatsapp-automation/server && npm install
+     npm run build:render
      ```
    * **Start Command**:
      ```bash
-     node whatsapp-automation/server/src/server.js
+     npm start
      ```
    * **Instance Type**:
      * **Free** (or Starter $7/mo): **Supabase PostgreSQL Session Persistence ($0 Disk Cost)** allows you to run on stateless / ephemeral containers without a paid Render persistent disk. When the container boots, it automatically hydrates the WhatsApp session from Supabase! For 24/7 instant WhatsApp responses without sleep delays, the **Starter** plan is recommended.
@@ -175,7 +177,7 @@ Once Render finishes building and starts your service, test these endpoints:
    *Expected response*: `{"status":"connected","linkedPhone":"919579158374", ...}`
 
 3. **Live Web App**:
-   Visit `https://your-app.onrender.com` in your browser. You will see the customer booking portal.
+   Visit `https://your-app.onrender.com` in your browser. You will see the Executive Admin Dashboard (with one-click Static Storefront Preview).
 
 4. **Live WhatsApp AI Test**:
    Send `"Hi"` or `"Show football slots for tomorrow"` from any personal phone to your venue's WhatsApp number. The agent will reply instantly with available slots and interactive booking buttons.
