@@ -4,6 +4,7 @@ A specialized automation SKU of the TurfFlow venue platform. In this edition, cu
 
 ![Platform Status](https://img.shields.io/badge/Status-Automation%20SKU-emerald?style=for-the-badge)
 ![Tech Stack](https://img.shields.io/badge/Tech%20Stack-React%20%7C%20Node.js%20%7C%20Baileys%20%7C%20Supabase-blue?style=for-the-badge)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/prajwalnangare01/Turf-Flow-Automation)
 
 ---
 
