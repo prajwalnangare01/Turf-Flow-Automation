@@ -8,7 +8,7 @@ services:
   - type: web
     name: turfflow-automation
     env: node
-    plan: starter # Starter ($7/mo) recommended for always-on WhatsApp WebSocket & persistent disk
+    plan: free # 100% Free Tier ($0/mo) - Uses Supabase for WhatsApp session persistence
     region: singapore # Close to India (low latency for Razorpay & WhatsApp)
     buildCommand: npm install --include=dev --legacy-peer-deps && npm run build && cd whatsapp-automation/server && npm install
     startCommand: node whatsapp-automation/server/src/server.js
