@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AuthService } from '../../services/authService';
 import { AdminUser } from '../../types/schema';
-import { ShieldCheck, Lock, Mail, KeyRound, ArrowLeft, AlertCircle, Sparkles } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, KeyRound, ArrowLeft, AlertCircle, Sparkles, Eye } from 'lucide-react';
 
 interface AdminLoginPageProps {
   onLoginSuccess: (admin: AdminUser) => void;
@@ -51,8 +51,9 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
         <button
           onClick={onSwitchToCustomer}
           className="btn-secondary text-xs px-3.5 py-2 flex items-center gap-2 font-bold hover:shadow-sm"
+          title="Preview Static Customer Storefront"
         >
-          <ArrowLeft className="w-4 h-4 text-primary" /> Back to Customer Portal
+          <Eye className="w-4 h-4 text-primary" /> Preview Site (Static View)
         </button>
 
         <div className="flex items-center gap-2 text-xs font-semibold text-on-surface-variant bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant/40">

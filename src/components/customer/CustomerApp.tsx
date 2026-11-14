@@ -26,9 +26,10 @@ import { ChevronRight, Search, UserCheck, User, LogOut, ShieldCheck, Clock, Cale
 
 interface CustomerAppProps {
   onSwitchToAdmin: () => void;
+  isStaticPreview?: boolean;
 }
 
-export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin }) => {
+export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin, isStaticPreview = false }) => {
   const [, setStoreVersion] = useState(0);
   const venue = store.getVenue();
   const [allSports, setAllSports] = useState<Sport[]>(() => store.getSports());
@@ -61,6 +62,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin }) => 
   const [customerView, setCustomerView] = useState<'booking' | 'profile' | 'policies'>('booking');
   const [initialPolicySection, setInitialPolicySection] = useState<PolicySection>('helpline');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showStaticNoticeModal, setShowStaticNoticeModal] = useState(false);
 
   // Filter sports to only those that have active courts configured at this venue
   const activeCourts = allCourts.filter(c => c.status === 'active');
@@ -383,6 +385,11 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin }) => 
   }, []);
 
   const handleToggleSlot = (slot: DynamicSlot) => {
+    if (isStaticPreview) {
+      setShowStaticNoticeModal(true);
+      return;
+    }
+
     if (!selectedCourt) return;
 
     // If slot is currently locked by another customer, show Active Customer Hold Modal (no login required to view timer)
@@ -691,6 +698,31 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin }) => 
 
   return (
     <div className="bg-background text-on-surface min-h-screen flex flex-col">
+      {/* Static Preview Top Banner */}
+      {isStaticPreview && (
+        <div className="bg-slate-900 text-white border-b border-slate-800 px-4 py-2.5 text-xs sticky top-0 z-[60] shadow-md">
+          <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-headline font-bold uppercase tracking-wider text-[11px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/30">
+                  Static Storefront Preview
+                </span>
+                <span className="text-slate-300 text-xs hidden sm:inline">
+                  Customer bookings are automated via WhatsApp Concierge. This web view is read-only.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onSwitchToAdmin}
+              className="bg-primary hover:bg-primary-hover text-white px-3.5 py-1.5 rounded-xl font-headline font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> <span>Back to Admin</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stitch TopAppBar Header */}
       <header className="sticky top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-outline-variant/40 shadow-sm flex items-center justify-between max-w-[1200px] mx-auto min-h-16 px-3 sm:px-4 py-2">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -762,7 +794,13 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin }) => 
             </div>
           ) : (
             <button
-              onClick={() => setShowAuthModal(true)}
+              onClick={() => {
+                if (isStaticPreview) {
+                  setShowStaticNoticeModal(true);
+                  return;
+                }
+                setShowAuthModal(true);
+              }}
               className="btn-cta px-3.5 sm:px-4 py-1.5 sm:py-2 text-xs font-headline font-bold flex items-center gap-2 shadow-sm rounded-full cursor-pointer hover:shadow-md transition-all"
             >
               <div className="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center">
@@ -1133,6 +1171,49 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin }) => 
         }}
         onCancel={() => setShowLogoutConfirm(false)}
       />
+
+      {/* Static Preview Notice Modal */}
+      {showStaticNoticeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-outline-variant/60 space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto text-xl shadow-xs">
+              👁️
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="font-headline font-bold text-lg text-primary">
+                Static Preview Mode (Read-Only)
+              </h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                In this <strong>TurfFlow Automation</strong> edition, customer bookings and slot reservations are handled <strong>exclusively via WhatsApp Automation</strong>.
+              </p>
+              <div className="bg-surface-container-low p-3.5 rounded-2xl border border-outline-variant/40 text-[11px] text-slate-700 text-left space-y-1.5 mt-2">
+                <p className="font-bold flex items-center gap-1.5 text-primary">
+                  <span>💬 How Customer Booking Works:</span>
+                </p>
+                <p>• Customers message your WhatsApp Business bot number.</p>
+                <p>• The AI Concierge checks slot availability and completes bookings.</p>
+                <p>• All reservations synchronize directly to your Admin Dashboard.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowStaticNoticeModal(false)}
+                className="btn-secondary flex-1 py-2.5 text-xs font-bold cursor-pointer"
+              >
+                Continue Preview
+              </button>
+              <button
+                type="button"
+                onClick={onSwitchToAdmin}
+                className="btn-cta flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Return to Admin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

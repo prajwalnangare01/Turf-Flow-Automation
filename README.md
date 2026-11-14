@@ -1,9 +1,28 @@
-# ⚽ TurfFlow — Production Sports Venue & Turf Booking Platform
+# ⚡ TurfFlow Automation — WhatsApp AI Concierge & Executive Admin Dashboard
 
-A high-performance, production-grade sports venue booking and operations platform. Built for sports turf owners, venue managers, and customers with real-time double-booking prevention, dynamic slot calculation, Razorpay payment processing, WhatsApp notifications, and role-based venue administration.
+A specialized automation SKU of the TurfFlow venue platform. In this edition, customer bookings and inquiries are handled **end-to-end via WhatsApp Automation & AI Concierge**, while venue owners and staff manage operations through the **Executive Admin Dashboard**. A **Static Storefront Preview** is provided for venue admins to inspect public venue listings in view-only mode.
 
-![Platform Screenshot Mockup](https://img.shields.io/badge/Status-Production%20Ready-emerald?style=for-the-badge)
-![Tech Stack](https://img.shields.io/badge/Tech%20Stack-React%20%7C%20TypeScript%20%7C%20Vite%20%7C%20Tailwind/CSS-blue?style=for-the-badge)
+![Platform Status](https://img.shields.io/badge/Status-Automation%20SKU-emerald?style=for-the-badge)
+![Tech Stack](https://img.shields.io/badge/Tech%20Stack-React%20%7C%20Node.js%20%7C%20Baileys%20%7C%20Supabase-blue?style=for-the-badge)
+
+---
+
+## 📦 What's Included in this SKU
+
+1. **WhatsApp Automation Server (`/whatsapp-automation`)**:
+   - Automated WhatsApp Concierge bot powered by Baileys WhatsApp Web client.
+   - Interactive conversational booking flows, real-time slot checking, and matchday reminders.
+   - Real-time PostgreSQL database synchronization via Supabase.
+
+2. **Executive Venue Admin Dashboard (`/admin`)**:
+   - Complete operations management: Schedule Calendar Matrix, Bookings Directory, Court Pricing Manager, Customer CRM, Analytics & Revenue Reports, System Audit Logs, and Venue Settings.
+   - Integrated WhatsApp Concierge pairing manager (QR code scan & 8-digit pairing code).
+   - Walk-in / offline booking entry.
+
+3. **Static Customer Storefront Preview (`/preview`)**:
+   - Integrated preview mode accessible directly from the Admin Dashboard.
+   - Allows administrators to inspect public venue details, sports, pitches, and pricing.
+   - Interactive booking is disabled (static view) since all customer reservations in this edition occur via WhatsApp.
 
 ---
 
@@ -17,19 +36,22 @@ A high-performance, production-grade sports venue booking and operations platfor
 
 1. **Clone or Navigate to Project Directory**:
    ```bash
-   cd "Turf Management"
+   git clone https://github.com/prajwalnangare01/Turf-Flow-Automation.git
+   cd Turf-Flow-Automation
    ```
 
 2. **Install Dependencies**:
    ```bash
    npm install
+   cd whatsapp-automation/server && npm install && cd ../..
    ```
 
-3. **Start Development Server**:
+3. **Start Development (Admin Dashboard + WhatsApp Bot Server)**:
    ```bash
    npm run dev
    ```
-   Open your browser at `http://localhost:3000/`
+   - Admin Portal runs at `http://localhost:5173/`
+   - WhatsApp Automation Server runs at `http://localhost:3001/`
 
 4. **Build for Production**:
    ```bash

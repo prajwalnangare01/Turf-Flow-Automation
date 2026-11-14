@@ -20,7 +20,7 @@ import { getVenueDateString } from '../../utils/venueTime';
 import { 
   Calendar, ListFilter, Settings, Users, BarChart3, History, 
   Sliders, PlusCircle, UserCheck, ArrowLeft, Lock, ShieldCheck, Zap, LogOut, ShieldAlert,
-  MessageSquare, Trash2
+  MessageSquare, Trash2, Eye
 } from 'lucide-react';
 
 interface AdminAppProps {
@@ -143,10 +143,12 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onSwitchToCustomer }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={onSwitchToCustomer}
-                className="btn-secondary text-[11px] sm:text-xs px-2.5 sm:px-3.5 py-1.5 flex items-center gap-1 font-bold shrink-0"
-                title="Return to Customer Storefront"
+                className="btn-secondary text-[11px] sm:text-xs px-2.5 sm:px-3.5 py-1.5 flex items-center gap-1.5 font-bold shrink-0 text-slate-700 hover:text-primary hover:border-primary/50 transition-colors shadow-xs"
+                title="Preview Customer Site (Static View Only)"
               >
-                <ArrowLeft className="w-3.5 h-3.5 text-primary" /> <span className="hidden xs:inline">Customer Portal</span>
+                <Eye className="w-3.5 h-3.5 text-primary" />
+                <span>Preview Site</span>
+                <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-mono font-semibold uppercase hidden sm:inline">Static</span>
               </button>
 
               <div className="flex items-center gap-2">

@@ -24,23 +24,18 @@ export const App: React.FC = () => {
       return '404';
     }
 
-    // Admin portal routes
+    // Static site preview routes
     if (
-      params.get('admin') === 'true' ||
-      hash.includes('admin') ||
-      pathname.startsWith('/admin')
+      params.get('preview') === 'true' ||
+      params.get('mode') === 'preview' ||
+      pathname === '/preview' ||
+      hash.includes('preview')
     ) {
-      return 'admin';
-    }
-
-    // Known customer paths
-    const validPaths = ['/', '/booking', '/policies', '/profile', '/turf'];
-    if (validPaths.includes(pathname)) {
       return 'customer';
     }
 
-    // Unrecognized routes trigger 404
-    return '404';
+    // Default route for TurfFlow Automation SKU (WhatsApp + Admin Hub) is Admin Portal
+    return 'admin';
   };
 
   const [view, setView] = useState<'customer' | 'admin' | '404'>(() => checkRoute());
@@ -69,8 +64,11 @@ export const App: React.FC = () => {
   const handleSwitchToAdmin = () => {
     try { sessionStorage.removeItem('turfflow_active_view'); } catch {}
     const currentParams = new URLSearchParams(window.location.search);
+    currentParams.delete('preview');
+    currentParams.delete('mode');
     currentParams.set('admin', 'true');
-    window.history.pushState({}, '', `?${currentParams.toString()}`);
+    const query = currentParams.toString() ? `?${currentParams.toString()}` : '/';
+    window.history.pushState({}, '', query);
     setView('admin');
   };
 
@@ -78,15 +76,14 @@ export const App: React.FC = () => {
     try { sessionStorage.removeItem('turfflow_active_view'); } catch {}
     const currentParams = new URLSearchParams(window.location.search);
     currentParams.delete('admin');
-    const query = currentParams.toString() ? `?${currentParams.toString()}` : '/';
+    currentParams.set('preview', 'true');
+    const query = currentParams.toString() ? `?${currentParams.toString()}` : '?preview=true';
     window.history.pushState({}, '', query);
     setView('customer');
   };
 
   const handleGoHome = () => {
-    try { sessionStorage.removeItem('turfflow_active_view'); } catch {}
-    window.history.pushState({}, '', '/');
-    setView('customer');
+    handleSwitchToAdmin();
   };
 
   return (
@@ -100,7 +97,7 @@ export const App: React.FC = () => {
             onSwitchToAdmin={handleSwitchToAdmin}
           />
         ) : (
-          <CustomerApp onSwitchToAdmin={handleSwitchToAdmin} />
+          <CustomerApp onSwitchToAdmin={handleSwitchToAdmin} isStaticPreview={true} />
         )}
       </div>
     </ErrorBoundary>
