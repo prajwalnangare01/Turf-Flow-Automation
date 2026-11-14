@@ -147,6 +147,10 @@ app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/simulator')) {
     return next();
   }
+  // Prevent returning index.html for missing static assets (js, css, images, fonts)
+  if (/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i.test(req.path)) {
+    return res.status(404).end();
+  }
   const indexPath = path.join(distPath, 'index.html');
   if (fs.existsSync(indexPath)) {
     return res.sendFile(indexPath);
