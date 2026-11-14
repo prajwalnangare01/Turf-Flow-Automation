@@ -138,10 +138,6 @@ app.get(['/api/health', '/health'], (req, res) => {
 const simulatorPath = path.resolve(__dirname, '../../simulator');
 app.use('/simulator', express.static(simulatorPath));
 
-// Serve production frontend build if available
-const distPath = path.resolve(__dirname, '../../../dist');
-app.use(express.static(distPath));
-
 // Fallback to React index.html for client routes (or redirect to /simulator if dist not built)
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/simulator')) {
