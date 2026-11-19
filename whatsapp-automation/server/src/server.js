@@ -207,7 +207,12 @@ async function startServer() {
 }
 
 // Start if executed directly
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+const isDirectRun = process.argv[1] && (
+  path.resolve(process.argv[1]).toLowerCase() === path.resolve(fileURLToPath(import.meta.url)).toLowerCase() ||
+  process.argv[1].endsWith('server.js')
+);
+
+if (isDirectRun) {
   startServer().catch(err => {
     console.error('Fatal server boot error:', err);
   });
