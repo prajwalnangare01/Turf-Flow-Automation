@@ -1025,7 +1025,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin, isSta
                   </span>
                 </h3>
                 <p className="text-xs text-on-surface-variant font-medium mt-0.5">
-                  Click available slots to reserve with real-time Redis locking
+                  Click available slots to reserve with real-time locking
                 </p>
               </div>
             </div>
@@ -1165,6 +1165,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin, isSta
         confirmText="Yes, Sign Out"
         cancelText="Cancel"
         variant="danger"
+        icon={<LogOut className="w-7 h-7 text-red-600" />}
         onConfirm={() => {
           setShowLogoutConfirm(false);
           handleCustomerLogout();
