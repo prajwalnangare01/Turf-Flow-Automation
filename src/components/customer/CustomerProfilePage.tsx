@@ -146,7 +146,7 @@ export const CustomerProfilePage: React.FC<CustomerProfilePageProps> = ({
   const [passModalBooking, setPassModalBooking] = useState<Booking | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [passLocationQrDataUrl, setPassLocationQrDataUrl] = useState<string>('');
-  const venue = store.getVenue();
+  const [venue, setVenue] = useState(() => store.getVenue());
   const venueLocationUrl = venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
 
   useEffect(() => {
@@ -185,9 +185,14 @@ export const CustomerProfilePage: React.FC<CustomerProfilePageProps> = ({
     const refresh = () => {
       const allB = store.getBookings();
       setBookingsList(sortBookingsDesc(allB.filter(b => customerIds.has(b.customer_id))));
+      setVenue({ ...store.getVenue() });
     };
     const unsubscribe = store.subscribe(refresh);
-    return () => unsubscribe();
+    window.addEventListener('turfflow_store_synced', refresh);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('turfflow_store_synced', refresh);
+    };
   }, [currentCustomer.id, currentDigits]);
 
   const courts = store.getCourts();
@@ -876,7 +881,11 @@ export const CustomerProfilePage: React.FC<CustomerProfilePageProps> = ({
         total_amount: booking.total_amount,
         total_order_amount: grandTotal,
         all_slots: [{ start_time: booking.start_time, end_time: booking.end_time, price: booking.total_amount }],
-        formatted_slots: singleSlotDisplay
+        formatted_slots: singleSlotDisplay,
+        venue: venue,
+        venue_name: venue.name,
+        venue_address: venue.address,
+        venue_location_url: venueLocationUrl
       };
 
       // 1. Try POST /api/bookings/generate-pass-pdf with specific slot payload
@@ -888,7 +897,7 @@ export const CustomerProfilePage: React.FC<CustomerProfilePageProps> = ({
 
       // 2. Fallback to GET endpoint with specific booking ref and slot query params
       if (!res.ok) {
-        res = await fetch(`/api/bookings/${booking.booking_ref}/pass.pdf?start_time=${encodeURIComponent(booking.start_time)}&end_time=${encodeURIComponent(booking.end_time)}`);
+        res = await fetch(`/api/bookings/${booking.booking_ref}/pass.pdf?start_time=${encodeURIComponent(booking.start_time)}&end_time=${encodeURIComponent(booking.end_time)}&venue_name=${encodeURIComponent(venue.name)}&venue_location_url=${encodeURIComponent(venueLocationUrl)}`);
       }
 
       if (res.ok) {

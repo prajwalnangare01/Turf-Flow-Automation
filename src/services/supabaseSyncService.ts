@@ -58,9 +58,13 @@ export class SupabaseSyncService {
       // 1. Fetch Venue
       const { data: venues, error: vErr } = await supabase.from('venues').select('*').limit(1);
       if (!vErr && venues && venues.length > 0) {
+        const local = store.getVenue();
+        const supa = venues[0];
         store.setVenue({
-          ...store.getVenue(),
-          ...venues[0]
+          ...local,
+          ...supa,
+          location_url: supa.location_url || local.location_url || supa.google_maps_link || local.google_maps_link,
+          google_maps_link: supa.google_maps_link || supa.location_url || local.google_maps_link || local.location_url
         });
       }
 
@@ -107,61 +111,84 @@ export class SupabaseSyncService {
 
         const activeRemoteCourts = courts.filter((c: any) => 
           !deletedCourtIds.includes(c.id) && 
-          c.status !== 'inactive' &&
-          !['test', 'test2', 'test3'].includes(c.name?.toLowerCase()?.trim())
+          c.status !== 'inactive'
         );
+
         const existingCourts = store.getCourts();
-        const enrichedCourts: Court[] = activeRemoteCourts.map((c: any) => {
-          const matchingSports = (courtSports || [])
-            .filter((cs: any) => cs.court_id === c.id)
-            .map((cs: any) => cs.sport_id);
+        if (activeRemoteCourts.length > 0) {
+          const enrichedCourts: Court[] = activeRemoteCourts.map((c: any) => {
+            const matchingSports = (courtSports || [])
+              .filter((cs: any) => cs.court_id === c.id)
+              .map((cs: any) => cs.sport_id);
 
-          const existingCourt = existingCourts.find(ec => ec.id === c.id);
+            const existingCourt = existingCourts.find(ec => ec.id === c.id);
 
-          // If court_sports junction in Supabase has records, use them.
-          // Otherwise, if local store already knows the court's sport_ids (e.g. Pickleball, Badminton), preserve them!
-          // And automatically self-heal the missing junction in Supabase!
-          let resolvedSportIds: string[] = matchingSports;
-          if (resolvedSportIds.length === 0) {
-            if (existingCourt?.sport_ids && existingCourt.sport_ids.length > 0) {
-              resolvedSportIds = existingCourt.sport_ids;
-              const junctionRows = resolvedSportIds.map(sid => ({ court_id: c.id, sport_id: sid }));
-              Promise.resolve(supabase.from('court_sports').upsert(junctionRows)).catch(() => {});
-            } else if (c.id === 'crt-003') {
-              resolvedSportIds = ['sp-badminton'];
-              Promise.resolve(supabase.from('court_sports').upsert([{ court_id: c.id, sport_id: 'sp-badminton' }])).catch(() => {});
-            } else {
-              resolvedSportIds = ['sp-football'];
+            // If court_sports junction in Supabase has records, use them.
+            // Otherwise, if local store already knows the court's sport_ids (e.g. Pickleball, Badminton), preserve them!
+            // And automatically self-heal the missing junction in Supabase!
+            let resolvedSportIds: string[] = matchingSports;
+            if (resolvedSportIds.length === 0) {
+              if (existingCourt?.sport_ids && existingCourt.sport_ids.length > 0) {
+                resolvedSportIds = existingCourt.sport_ids;
+                const junctionRows = resolvedSportIds.map(sid => ({ court_id: c.id, sport_id: sid }));
+                Promise.resolve(supabase.from('court_sports').upsert(junctionRows)).catch(() => {});
+              } else if (c.id === 'crt-003') {
+                resolvedSportIds = ['sp-badminton'];
+                Promise.resolve(supabase.from('court_sports').upsert([{ court_id: c.id, sport_id: 'sp-badminton' }])).catch(() => {});
+              } else {
+                resolvedSportIds = ['sp-football'];
+              }
+            }
+
+            return {
+              id: c.id,
+              venue_id: c.venue_id,
+              name: c.name,
+              slot_duration_minutes: c.slot_duration_minutes || 60,
+              opening_time: typeof c.opening_time === 'string' ? c.opening_time.slice(0, 5) : '06:00',
+              closing_time: typeof c.closing_time === 'string' ? c.closing_time.slice(0, 5) : '23:00',
+              buffer_minutes: c.buffer_minutes || 0,
+              status: c.status || 'active',
+              base_price_per_hour: Number(c.base_price_per_hour) || 1200,
+              original_price_per_hour: c.original_price_per_hour ? Number(c.original_price_per_hour) : (existingCourt?.original_price_per_hour || undefined),
+              saturday_price_per_hour: Number(c.saturday_price_per_hour) || 1600,
+              saturday_offer_price_per_hour: c.saturday_offer_price_per_hour ? Number(c.saturday_offer_price_per_hour) : undefined,
+              sunday_price_per_hour: Number(c.sunday_price_per_hour) || 1600,
+              sunday_offer_price_per_hour: c.sunday_offer_price_per_hour ? Number(c.sunday_offer_price_per_hour) : undefined,
+              weekend_price_per_hour: Number(c.weekend_price_per_hour) || 1600,
+              peak_enabled: Boolean(c.peak_enabled),
+              peak_start_time: typeof c.peak_start_time === 'string' ? c.peak_start_time.slice(0, 5) : '18:00',
+              peak_end_time: typeof c.peak_end_time === 'string' ? c.peak_end_time.slice(0, 5) : '23:00',
+              peak_price_per_hour: Number(c.peak_price_per_hour) || 1800,
+              peak_offer_price_per_hour: c.peak_offer_price_per_hour ? Number(c.peak_offer_price_per_hour) : undefined,
+              offer_end_date: c.offer_end_date ? String(c.offer_end_date).slice(0, 10) : undefined,
+              sport_ids: resolvedSportIds
+            };
+          });
+
+          // CRITICAL: Preserve any locally added/pending pitches so they are NEVER wiped out on sync!
+          const mergedCourts = [...enrichedCourts];
+          for (const loc of existingCourts) {
+            if (!deletedCourtIds.includes(loc.id) && !mergedCourts.some(c => c.id === loc.id)) {
+              mergedCourts.push(loc);
+              // Asynchronously push to Supabase to self-heal
+              this.syncCourtToSupabase(loc).catch(() => {});
             }
           }
 
-          return {
-            id: c.id,
-            venue_id: c.venue_id,
-            name: c.name,
-            slot_duration_minutes: c.slot_duration_minutes || 60,
-            opening_time: typeof c.opening_time === 'string' ? c.opening_time.slice(0, 5) : '06:00',
-            closing_time: typeof c.closing_time === 'string' ? c.closing_time.slice(0, 5) : '23:00',
-            buffer_minutes: c.buffer_minutes || 0,
-            status: c.status || 'active',
-            base_price_per_hour: Number(c.base_price_per_hour) || 1200,
-            original_price_per_hour: c.original_price_per_hour ? Number(c.original_price_per_hour) : (existingCourt?.original_price_per_hour || undefined),
-            saturday_price_per_hour: Number(c.saturday_price_per_hour) || 1600,
-            saturday_offer_price_per_hour: c.saturday_offer_price_per_hour ? Number(c.saturday_offer_price_per_hour) : undefined,
-            sunday_price_per_hour: Number(c.sunday_price_per_hour) || 1600,
-            sunday_offer_price_per_hour: c.sunday_offer_price_per_hour ? Number(c.sunday_offer_price_per_hour) : undefined,
-            weekend_price_per_hour: Number(c.weekend_price_per_hour) || 1600,
-            peak_enabled: Boolean(c.peak_enabled),
-            peak_start_time: typeof c.peak_start_time === 'string' ? c.peak_start_time.slice(0, 5) : '18:00',
-            peak_end_time: typeof c.peak_end_time === 'string' ? c.peak_end_time.slice(0, 5) : '23:00',
-            peak_price_per_hour: Number(c.peak_price_per_hour) || 1800,
-            peak_offer_price_per_hour: c.peak_offer_price_per_hour ? Number(c.peak_offer_price_per_hour) : undefined,
-            offer_end_date: c.offer_end_date ? String(c.offer_end_date).slice(0, 10) : undefined,
-            sport_ids: resolvedSportIds
-          };
-        });
-
-        store.setCourts(enrichedCourts, false);
+          store.setCourts(mergedCourts, false);
+        } else if (existingCourts.length > 0) {
+          // Supabase has no active courts yet: preserve existing local non-deleted courts and seed them to Supabase
+          const validLocal = existingCourts.filter(c => !deletedCourtIds.includes(c.id));
+          if (validLocal.length > 0) {
+            console.log(`🔄 [Supabase Sync] Preserving ${validLocal.length} local pitch(es) and seeding to Supabase...`);
+            for (const dc of validLocal) {
+              this.syncCourtToSupabase(dc).catch(() => {});
+            }
+          } else {
+            store.setCourts([], false);
+          }
+        }
       }
 
       // 4. Fetch Customers
@@ -776,9 +803,15 @@ export class SupabaseSyncService {
         created_at: customer.created_at || new Date().toISOString()
       };
 
-      const { error } = await supabase
+      let { error } = await supabase
         .from('customers')
         .upsert([payload], { onConflict: 'id' });
+
+      if (error && error.message?.includes('email_verified')) {
+        delete (payload as any).email_verified;
+        const retryRes = await supabase.from('customers').upsert([payload], { onConflict: 'id' });
+        error = retryRes.error;
+      }
 
       if (error) {
         console.error('❌ [Supabase Sync] Error syncing customer:', error.message);
@@ -951,18 +984,15 @@ export class SupabaseSyncService {
    */
   public static async syncCourtToSupabase(court: Court): Promise<boolean> {
     if (!court || !court.id || court.status === 'inactive') return false;
-    const lowerName = court.name?.toLowerCase()?.trim() || '';
-    if (['test', 'test2', 'test3'].includes(lowerName) || lowerName.startsWith('test')) {
-      console.log(`🛡️ [Supabase Sync] Blocked sync of test court: ${court.name} (${court.id})`);
-      return false;
-    }
 
+    // Un-blacklist court ID from deleted courts if actively being added or restored
     try {
       const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('TURFFLOW_DELETED_COURTS') : null;
-      const deletedList: string[] = raw ? JSON.parse(raw) : [];
-      if (deletedList.includes(court.id)) {
-        console.log(`🛡️ [Supabase Sync] Blocked sync of deleted court: ${court.name} (${court.id})`);
-        return false;
+      if (raw) {
+        const deletedList: string[] = JSON.parse(raw);
+        if (deletedList.includes(court.id)) {
+          localStorage.setItem('TURFFLOW_DELETED_COURTS', JSON.stringify(deletedList.filter(id => id !== court.id)));
+        }
       }
     } catch (e) {}
 
@@ -970,7 +1000,7 @@ export class SupabaseSyncService {
     if (!supabase) return false;
 
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         id: court.id,
         venue_id: court.venue_id || store.getVenue().id,
         name: court.name,
@@ -994,7 +1024,16 @@ export class SupabaseSyncService {
         offer_end_date: court.offer_end_date ? court.offer_end_date.slice(0, 10) : null
       };
 
-      const { error } = await supabase.from('courts').upsert([payload], { onConflict: 'id' });
+      let { error } = await supabase.from('courts').upsert([payload], { onConflict: 'id' });
+      // Schema resilience fallback: if offer/pricing extensions don't exist in Supabase schema cache, strip them and retry
+      if (error && error.message && error.message.includes("column of 'courts' in the schema cache")) {
+        delete payload.original_price_per_hour;
+        delete payload.saturday_offer_price_per_hour;
+        delete payload.sunday_offer_price_per_hour;
+        delete payload.peak_offer_price_per_hour;
+        const retryRes = await supabase.from('courts').upsert([payload], { onConflict: 'id' });
+        error = retryRes.error;
+      }
       if (error) {
         console.error('❌ [Supabase Sync] Error syncing court to Supabase:', error.message);
         return false;
@@ -1222,7 +1261,16 @@ export class SupabaseSyncService {
         email_sender: venue.email_sender || null
       };
 
-      const { error } = await supabase.from('venues').upsert([payload], { onConflict: 'id' });
+      if (venue.location_url) payload.location_url = venue.location_url;
+      if (venue.google_maps_link) payload.google_maps_link = venue.google_maps_link;
+
+      let { error } = await supabase.from('venues').upsert([payload], { onConflict: 'id' });
+      if (error && (error.message?.includes('location_url') || error.message?.includes('google_maps_link'))) {
+        delete payload.location_url;
+        delete payload.google_maps_link;
+        const retryRes = await supabase.from('venues').upsert([payload], { onConflict: 'id' });
+        error = retryRes.error;
+      }
       if (error) {
         console.warn('⚠️ [Supabase Sync] Note when syncing venue to Supabase:', error.message);
         return false;

@@ -24,7 +24,7 @@ const DEFAULT_VENUE: Venue = {
   email_sender: 'TurfFlow Arena <rajupainter84688@gmail.com>'
 };
 
-const DEFAULT_SPORTS: Sport[] = [
+export const DEFAULT_SPORTS: Sport[] = [
   {
     id: 'sp-football',
     name: 'Football',
@@ -59,7 +59,7 @@ const DEFAULT_SPORTS: Sport[] = [
   }
 ];
 
-const DEFAULT_COURTS: Court[] = [
+export const DEFAULT_COURTS: Court[] = [
   {
     id: 'crt-001',
     venue_id: 'ven-001',
@@ -124,6 +124,25 @@ const DEFAULT_COURTS: Court[] = [
     peak_start_time: '18:00',
     peak_end_time: '22:00',
     peak_price_per_hour: 800
+  },
+  {
+    id: 'crt-004',
+    venue_id: 'ven-001',
+    sport_ids: ['sp-pickleball'],
+    name: 'Court 2 — Pro Cushioned Pickleball',
+    slot_duration_minutes: 60,
+    opening_time: '06:00',
+    closing_time: '22:00',
+    buffer_minutes: 0,
+    status: 'active',
+    base_price_per_hour: 600,
+    original_price_per_hour: 800,
+    saturday_price_per_hour: 800,
+    sunday_price_per_hour: 800,
+    peak_enabled: true,
+    peak_start_time: '18:00',
+    peak_end_time: '22:00',
+    peak_price_per_hour: 900
   }
 ];
 
@@ -345,6 +364,19 @@ class AppStore {
         console.log('🌐 [Network Reconnect] Online event detected. Resyncing store state...');
         this.syncOnReconnect();
       });
+
+      // Synchronize changes across multiple browser tabs/windows in real time
+      window.addEventListener('storage', (event) => {
+        if (event.key === 'TURFFLOW_STORE_V1' && event.newValue) {
+          try {
+            console.log('🔄 [Cross-Tab Sync] Store update detected from another tab. Reloading state...');
+            this.loadFromStorage();
+            this.notify();
+          } catch (e) {
+            console.warn('Cross-tab sync error:', e);
+          }
+        }
+      });
     }
   }
 
@@ -390,29 +422,23 @@ class AppStore {
         try {
           const raw = localStorage.getItem('TURFFLOW_DELETED_COURTS');
           if (raw) deletedCourtIds = JSON.parse(raw);
-          const testCourtIds = (parsed.courts || [])
-            .filter((c: Court) => ['test', 'test2', 'test3'].includes(c.name?.toLowerCase()?.trim()))
-            .map((c: Court) => c.id);
-          if (testCourtIds.length > 0) {
-            deletedCourtIds = Array.from(new Set([...deletedCourtIds, ...testCourtIds]));
-            localStorage.setItem('TURFFLOW_DELETED_COURTS', JSON.stringify(deletedCourtIds));
-          }
         } catch (e) {}
 
-        const rawCourts: Court[] = (parsed.courts || DEFAULT_COURTS).filter(
-          (c: Court) => !deletedCourtIds.includes(c.id) && 
-                        c.status !== 'inactive' &&
-                        !['test', 'test2', 'test3'].includes(c.name?.toLowerCase()?.trim())
-        );
-        this.courts = rawCourts.map(c => {
-          if (!c.original_price_per_hour) {
-            const def = DEFAULT_COURTS.find(dc => dc.id === c.id);
-            if (def && def.original_price_per_hour) {
-              return { ...c, original_price_per_hour: def.original_price_per_hour };
+        // Use parsed.courts if explicitly saved (even if empty array [ ]); only fall back to DEFAULT_COURTS on first-time uninitialized store
+        const rawCourts: Court[] = Array.isArray(parsed.courts) ? parsed.courts : DEFAULT_COURTS;
+        let loadedCourts = rawCourts
+          .filter((c: Court) => !deletedCourtIds.includes(c.id) && c.status !== 'inactive')
+          .map(c => {
+            if (!c.original_price_per_hour) {
+              const def = DEFAULT_COURTS.find(dc => dc.id === c.id);
+              if (def && def.original_price_per_hour) {
+                return { ...c, original_price_per_hour: def.original_price_per_hour };
+              }
             }
-          }
-          return c;
-        });
+            return c;
+          });
+
+        this.courts = loadedCourts;
         const rawRules: PricingRule[] = parsed.pricingRules || DEFAULT_PRICING_RULES;
         this.pricingRules = rawRules.filter(
           r => !(r.start_time === '18:00' && r.end_time === '23:00') &&
@@ -510,7 +536,17 @@ class AppStore {
     this.dataArchiveSettings = { ...this.dataArchiveSettings, ...settings };
     this.saveToStorage();
   }
-  public setVenue(venue: Venue) { this.venue = venue; this.saveToStorage(); }
+  public setVenue(venue: Venue) {
+    const targetUrl = venue.location_url || venue.google_maps_link || this.venue.location_url || this.venue.google_maps_link;
+    this.venue = {
+      ...this.venue,
+      ...venue,
+      location_url: targetUrl,
+      google_maps_link: targetUrl
+    };
+    this.saveToStorage();
+    this.notify();
+  }
   public setSports(sports: Sport[]) { this.sports = sports; this.saveToStorage(); }
   private lastSyncedCourtsHash = '';
 
@@ -528,6 +564,31 @@ class AppStore {
         }).catch(() => {});
       }
     }
+  }
+
+  public getDefaultCourts(): Court[] {
+    return [...DEFAULT_COURTS];
+  }
+
+  public getDefaultSports(): Sport[] {
+    return [...DEFAULT_SPORTS];
+  }
+
+  public restoreDefaultCourts(syncServer = true): Court[] {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('TURFFLOW_DELETED_COURTS');
+    }
+    this.courts = [...DEFAULT_COURTS];
+    this.saveToStorage();
+    if (syncServer && typeof window !== 'undefined' && typeof fetch === 'function') {
+      fetch('/api/courts/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courts: DEFAULT_COURTS })
+      }).catch(() => {});
+    }
+    this.notify();
+    return this.courts;
   }
   public setPricingRules(rules: PricingRule[]) { this.pricingRules = rules; this.saveToStorage(); }
   public setCustomers(customers: Customer[]) { this.customers = customers; this.saveToStorage(); }

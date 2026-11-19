@@ -48,7 +48,12 @@ export class GatePassService {
    * Generate official PDF Gate Pass & Payment Receipt as a Buffer
    */
   static async generatePassPdfBuffer(booking) {
-    const venue = store.getVenue();
+    const venue = booking.venue || {
+      ...store.getVenue(),
+      ...(booking.venue_name ? { name: booking.venue_name } : {}),
+      ...(booking.venue_address ? { address: booking.venue_address } : {}),
+      ...(booking.venue_location_url ? { location_url: booking.venue_location_url, google_maps_link: booking.venue_location_url } : {})
+    };
     const court = store.getCourts().find(c => c.id === booking.court_id);
     const sports = store.getSports();
     const sport = sports.find(s => s.id === booking.sport_id);
@@ -64,7 +69,7 @@ export class GatePassService {
     const sportName = (sport?.name || booking.sport_name || 'Football').replace(/[^\x00-\x7F]/g, '');
 
     // Resolve accurate venue location link
-    const venueLocationUrl = venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
+    const venueLocationUrl = booking.venue_location_url || booking.location_url || venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
 
     // Generate Location QR code for directions / navigation
     const locationQrBuffer = await QRCode.toBuffer(venueLocationUrl, { margin: 1, width: 140 });
@@ -280,7 +285,12 @@ export class GatePassService {
    * Return printable HTML string matching the website's Ticket Pass modal
    */
   static async generatePassHtml(booking) {
-    const venue = store.getVenue();
+    const venue = booking.venue || {
+      ...store.getVenue(),
+      ...(booking.venue_name ? { name: booking.venue_name } : {}),
+      ...(booking.venue_address ? { address: booking.venue_address } : {}),
+      ...(booking.venue_location_url ? { location_url: booking.venue_location_url, google_maps_link: booking.venue_location_url } : {})
+    };
     const court = store.getCourts().find(c => c.id === booking.court_id);
     const customer = store.getCustomers().find(c => c.id === booking.customer_id) || {
       name: booking.customer_name || 'Customer',
@@ -291,7 +301,7 @@ export class GatePassService {
     const otpCode = WhatsAppFormatter.getBookingGatePassOtp(booking);
 
     // Resolve accurate venue location link & generate Location QR code
-    const venueLocationUrl = venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
+    const venueLocationUrl = booking.venue_location_url || booking.location_url || venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
     let locationQrDataUrl = '';
     try {
       locationQrDataUrl = await QRCode.toDataURL(venueLocationUrl, { margin: 1, width: 140 });

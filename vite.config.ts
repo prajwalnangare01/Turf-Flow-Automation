@@ -307,6 +307,9 @@ export default defineConfig(({ mode }) => {
         }
       }
     ],
+    resolve: {
+      preserveSymlinks: true
+    },
     server: {
       port: 3000,
       host: true,

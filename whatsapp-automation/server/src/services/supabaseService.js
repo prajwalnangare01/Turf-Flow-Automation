@@ -24,9 +24,12 @@ export class SupabaseService {
       // 1. Fetch Venue
       const { data: venues, error: vErr } = await supabase.from('venues').select('*').limit(1);
       if (!vErr && venues?.length > 0) {
+        const supaVenue = venues[0];
         store.venue = {
           ...store.venue,
-          ...venues[0]
+          ...supaVenue,
+          location_url: supaVenue.location_url || store.venue.location_url || supaVenue.google_maps_link || store.venue.google_maps_link,
+          google_maps_link: supaVenue.google_maps_link || supaVenue.location_url || store.venue.google_maps_link || store.venue.location_url
         };
       }
 
@@ -573,8 +576,8 @@ export class SupabaseService {
       const { data: courts, error: cErr } = await supabase.from('courts').select('*');
       const { data: courtSports, error: csErr } = await supabase.from('court_sports').select('*');
 
-      if (!cErr && courts) {
-        store.courts = courts
+      if (!cErr && courts && courts.length > 0) {
+        const enriched = courts
           .filter(c => c.status !== 'inactive')
           .sort((a, b) => {
             if (a.id === 'crt-001') return -1;
@@ -614,6 +617,14 @@ export class SupabaseService {
               sport_ids: matchingSports.length > 0 ? matchingSports : ['sp-football']
             };
           });
+
+        const merged = [...enriched];
+        for (const localCourt of store.courts) {
+          if (!merged.some(c => c.id === localCourt.id)) {
+            merged.push(localCourt);
+          }
+        }
+        store.courts = merged;
         console.log(`🏟️ [SupabaseService] Refreshed courts count: ${store.courts.length}`);
       }
     } catch (err) {
@@ -682,7 +693,19 @@ export class SupabaseService {
         offer_end_date: court.offer_end_date || null
       };
 
-      await supabase.from('courts').upsert([payload], { onConflict: 'id' });
+      let { error } = await supabase.from('courts').upsert([payload], { onConflict: 'id' });
+      if (error && error.message?.includes("column of 'courts' in the schema cache")) {
+        delete payload.original_price_per_hour;
+        delete payload.saturday_offer_price_per_hour;
+        delete payload.sunday_offer_price_per_hour;
+        delete payload.peak_offer_price_per_hour;
+        const retryRes = await supabase.from('courts').upsert([payload], { onConflict: 'id' });
+        error = retryRes.error;
+      }
+      if (error) {
+        console.warn('⚠️ SupabaseService.upsertCourt error:', error.message);
+        return false;
+      }
 
       if (Array.isArray(court.sport_ids) && court.sport_ids.length > 0) {
         await supabase.from('court_sports').delete().eq('court_id', court.id);
@@ -692,6 +715,48 @@ export class SupabaseService {
       return true;
     } catch (err) {
       console.warn('⚠️ SupabaseService.upsertCourt error:', err.message);
+      return false;
+    }
+  }
+
+  /**
+   * Sync updated venue identity and location URL to Supabase
+   */
+  static async syncVenue(venue) {
+    if (!isSupabaseConfigured() || !venue) return false;
+    try {
+      const supabase = getSupabase();
+      if (!supabase) return false;
+
+      const payload = {
+        id: venue.id || 'ven-001',
+        name: venue.name,
+        address: venue.address,
+        timezone: venue.timezone || 'Asia/Kolkata',
+        gst_number: venue.gst_number,
+        contact_phone: venue.contact_phone,
+        contact_email: venue.contact_email || null,
+        is_active: venue.is_active !== false,
+        min_notice_minutes: venue.min_notice_minutes || 15,
+        max_advance_days: venue.max_advance_days || 14,
+        whatsapp_enabled: Boolean(venue.whatsapp_enabled),
+        sms_fallback_enabled: Boolean(venue.sms_fallback_enabled),
+        email_enabled: Boolean(venue.email_enabled),
+        email_sender: venue.email_sender || null
+      };
+      if (venue.location_url) payload.location_url = venue.location_url;
+      if (venue.google_maps_link) payload.google_maps_link = venue.google_maps_link;
+
+      let { error } = await supabase.from('venues').upsert([payload], { onConflict: 'id' });
+      if (error && (error.message?.includes('location_url') || error.message?.includes('google_maps_link'))) {
+        delete payload.location_url;
+        delete payload.google_maps_link;
+        const retry = await supabase.from('venues').upsert([payload], { onConflict: 'id' });
+        error = retry.error;
+      }
+      return !error;
+    } catch (e) {
+      console.warn('Backend Supabase syncVenue error:', e.message);
       return false;
     }
   }

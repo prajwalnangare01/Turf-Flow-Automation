@@ -31,13 +31,14 @@ interface CustomerAppProps {
 
 export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin, isStaticPreview = false }) => {
   const [, setStoreVersion] = useState(0);
-  const venue = store.getVenue();
+  const [venue, setVenue] = useState(() => store.getVenue());
   const [allSports, setAllSports] = useState<Sport[]>(() => store.getSports());
   const [allCourts, setAllCourts] = useState<Court[]>(() => store.getCourts());
 
-  // Listen to store updates for live dynamic sports & pitches synchronization
+  // Listen to store updates for live dynamic sports, pitches & venue synchronization
   useEffect(() => {
     const handleStoreChange = () => {
+      setVenue({ ...store.getVenue() });
       setAllSports([...store.getSports()]);
       setAllCourts([...store.getCourts()]);
     };
@@ -815,6 +816,40 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ onSwitchToAdmin, isSta
       <main className={`flex-1 w-full max-w-[1200px] mx-auto px-3 sm:px-4 pt-4 sm:pt-6 space-y-6 sm:space-y-8 ${selectedSlots.length > 0 ? 'pb-28 sm:pb-32' : 'pb-10'}`}>
         {isInitialLoading && allCourts.length === 0 ? (
           <CustomerPortalSkeleton />
+        ) : activeCourts.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-outline-variant/50 p-8 sm:p-12 text-center space-y-5 shadow-sm my-6 max-w-2xl mx-auto animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 rounded-3xl bg-surface-container-low text-4xl flex items-center justify-center mx-auto shadow-2xs border border-outline-variant/40">
+              🏟️
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-headline font-bold text-2xl sm:text-3xl text-on-surface tracking-tight">
+                No Turfs Currently Available
+              </h3>
+              <p className="text-sm text-on-surface-variant max-w-lg mx-auto leading-relaxed">
+                There are currently no active turfs or sports pitches configured for online booking at {venue.name || 'TurfFlow Arena'}. Please check back shortly or reach out to venue management directly.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+              <a
+                href={`tel:${venue.contact_phone || '+91 95791 58374'}`}
+                className="btn-primary w-full sm:w-auto px-5 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition cursor-pointer"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Call Venue: {venue.contact_phone || '+91 95791 58374'}</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  setInitialPolicySection('location');
+                  setCustomerView('policies');
+                }}
+                className="btn-secondary w-full sm:w-auto px-5 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 border border-outline-variant/60 hover:bg-surface-container-low transition cursor-pointer"
+              >
+                <MapPin className="w-4 h-4 text-primary" />
+                <span>View Location & Policies</span>
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             {/* 5-Minute Inactivity Hold Timeout Notice */}

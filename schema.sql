@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS venues (
   sms_fallback_enabled BOOLEAN DEFAULT TRUE,
   email_enabled BOOLEAN DEFAULT TRUE,
   email_sender VARCHAR(255) DEFAULT 'TurfFlow Arena <rajupainter84688@gmail.com>',
+  location_url TEXT,
+  google_maps_link TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -11,6 +11,8 @@ export interface EmailDispatchResult {
   recipient: string;
   subject: string;
   preview: string;
+  html?: string;
+  text?: string;
 }
 
 export interface EmailAttachment {
@@ -162,6 +164,7 @@ export class EmailService {
     const otpCode = getBookingGatePassOtp(booking);
     const timeRangeStr = booking.formatted_slots || formatTimeRange12h(booking.start_time, booking.end_time);
     const totalPaidAmount = booking.total_order_amount || booking.total_amount;
+    const venueLocationUrl = venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
 
     const subject = `Booking Confirmed: ${booking.booking_ref} - ${venue.name}`;
 
@@ -177,6 +180,7 @@ export class EmailService {
       `Slot Time(s): ${timeRangeStr}`,
       `Total Paid: INR ${totalPaidAmount}`,
       `Venue Address: ${venue.address}`,
+      `Google Maps Directions: ${venueLocationUrl}`,
       ``,
       `Important Guidelines:`,
       `- Arrive 10 minutes prior to your reserved slot.`,
@@ -250,7 +254,11 @@ export class EmailService {
           </tr>
           <tr>
             <td style="padding: 12px 16px; font-size: 13px; color: #64748b;">Venue Location</td>
-            <td style="padding: 12px 16px; font-size: 12px; color: #334155;"><strong>${venue.name}</strong><br/>${venue.address}</td>
+            <td style="padding: 12px 16px; font-size: 12px; color: #334155;">
+              <strong>${venue.name}</strong><br/>
+              ${venue.address}<br/>
+              <a href="${venueLocationUrl}" target="_blank" style="display: inline-block; margin-top: 6px; color: #006b30; font-weight: 700; text-decoration: none;">📍 Open Directions in Google Maps &rarr;</a>
+            </td>
           </tr>
         </table>
 
@@ -303,7 +311,11 @@ export class EmailService {
       );
     } catch {}
 
-    return res;
+    return {
+      ...res,
+      html,
+      text
+    };
   }
 
   /**
@@ -467,7 +479,11 @@ export class EmailService {
       );
     } catch {}
 
-    return res;
+    return {
+      ...res,
+      html,
+      text
+    };
   }
 
   /**
@@ -653,7 +669,11 @@ export class EmailService {
       );
     } catch {}
 
-    return res;
+    return {
+      ...res,
+      html,
+      text
+    };
   }
 
   /**
@@ -1250,7 +1270,11 @@ export class EmailService {
       );
     } catch {}
 
-    return res;
+    return {
+      ...res,
+      html,
+      text
+    };
   }
 
   /**

@@ -28,7 +28,19 @@ export const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> =
 
   const allBookings = store.getBookings();
   const booking = cachedBooking || allBookings.find(b => b.booking_ref === bookingRef || b.group_ref === bookingRef);
-  const venue = store.getVenue();
+  const [venue, setVenue] = useState(() => store.getVenue());
+
+  useEffect(() => {
+    const handleStoreChange = () => {
+      setVenue({ ...store.getVenue() });
+    };
+    const unsubscribe = store.subscribe(handleStoreChange);
+    window.addEventListener('turfflow_store_synced', handleStoreChange);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('turfflow_store_synced', handleStoreChange);
+    };
+  }, []);
 
   if (!booking) return null;
 
@@ -94,7 +106,11 @@ export const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> =
         total_amount: grandTotalPaid,
         total_order_amount: grandTotalPaid,
         all_slots: allSlots,
-        formatted_slots: formattedSlotsStr
+        formatted_slots: formattedSlotsStr,
+        venue: venue,
+        venue_name: venue.name,
+        venue_address: venue.address,
+        venue_location_url: venueLocationUrl
       };
 
       // 1. Try POST to generate-pass-pdf with complete client payload
@@ -106,7 +122,7 @@ export const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> =
 
       // 2. Fallback to GET endpoint
       if (!res.ok) {
-        res = await fetch(`/api/bookings/${groupRef}/pass.pdf`);
+        res = await fetch(`/api/bookings/${groupRef}/pass.pdf?venue_name=${encodeURIComponent(venue.name)}&venue_location_url=${encodeURIComponent(venueLocationUrl)}`);
       }
 
       if (res.ok) {

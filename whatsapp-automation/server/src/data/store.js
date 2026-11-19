@@ -1,5 +1,12 @@
 // TurfFlow Shared Data Store
 // Aligned 100% with schema.sql and src/services/store.ts
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const VENUE_FILE = path.resolve(__dirname, '../../venue_config.json');
 
 export const DEFAULT_VENUE = {
   id: 'ven-001',
@@ -95,6 +102,25 @@ export const DEFAULT_COURTS = [
     peak_start_time: '18:00',
     peak_end_time: '22:00',
     peak_price_per_hour: 800
+  },
+  {
+    id: 'crt-004',
+    venue_id: 'ven-001',
+    sport_ids: ['sp-pickleball'],
+    name: 'Court 2 — Pro Cushioned Pickleball',
+    slot_duration_minutes: 60,
+    opening_time: '06:00',
+    closing_time: '22:00',
+    buffer_minutes: 0,
+    status: 'active',
+    original_price_per_hour: 800,
+    base_price_per_hour: 600,
+    saturday_price_per_hour: 800,
+    sunday_price_per_hour: 800,
+    peak_enabled: true,
+    peak_start_time: '18:00',
+    peak_end_time: '22:00',
+    peak_price_per_hour: 900
   }
 ];
 
@@ -144,7 +170,14 @@ class Store {
   }
 
   reset() {
-    this.venue = { ...DEFAULT_VENUE };
+    let persistedVenue = null;
+    try {
+      if (fs.existsSync(VENUE_FILE)) {
+        persistedVenue = JSON.parse(fs.readFileSync(VENUE_FILE, 'utf-8'));
+      }
+    } catch {}
+
+    this.venue = { ...DEFAULT_VENUE, ...(persistedVenue || {}) };
     this.sports = [...DEFAULT_SPORTS];
     this.courts = JSON.parse(JSON.stringify(DEFAULT_COURTS));
     this.cancellationPolicies = [...DEFAULT_CANCELLATION_POLICIES];
@@ -161,12 +194,18 @@ class Store {
   getVenue() { return this.venue; }
   setVenue(venue) {
     if (!venue) return this.venue;
+    const targetUrl = venue.location_url || venue.google_maps_link || this.venue.location_url || this.venue.google_maps_link;
     this.venue = {
       ...this.venue,
       ...venue,
-      location_url: venue.location_url || venue.google_maps_link || this.venue.location_url,
-      google_maps_link: venue.location_url || venue.google_maps_link || this.venue.google_maps_link
+      location_url: targetUrl,
+      google_maps_link: targetUrl
     };
+    try {
+      fs.writeFileSync(VENUE_FILE, JSON.stringify(this.venue, null, 2), 'utf-8');
+    } catch (e) {
+      console.warn('Could not save venue_config.json to disk:', e.message);
+    }
     return this.venue;
   }
   getSports() { return this.sports; }

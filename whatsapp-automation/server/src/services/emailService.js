@@ -132,6 +132,7 @@ export class EmailService {
       return { success: false, skipped: true, message: 'No email found for customer' };
     }
 
+    const venueLocationUrl = booking.venue_location_url || booking.location_url || venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
     const timeRangeStr = `${this.formatTime12h(booking.start_time)} - ${this.formatTime12h(booking.end_time)}`;
     const subject = `Booking Confirmed: ${booking.booking_ref} - ${venue.name}`;
 
@@ -147,6 +148,7 @@ export class EmailService {
       `Time: ${timeRangeStr}`,
       `Total Paid: INR ${booking.total_amount}`,
       `Address: ${venue.address}`,
+      `Google Maps Directions: ${venueLocationUrl}`,
       ``,
       `Show your 4-digit OTP (${otpCode}) at the gate turnstile for venue access.`,
       `Team ${venue.name}`
@@ -195,7 +197,11 @@ export class EmailService {
           </tr>
           <tr>
             <td style="padding: 12px 16px; font-size: 13px; color: #64748b;">Venue Location</td>
-            <td style="padding: 12px 16px; font-size: 12px; color: #334155;"><strong>${venue.name}</strong><br/>${venue.address}</td>
+            <td style="padding: 12px 16px; font-size: 12px; color: #334155;">
+              <strong>${venue.name}</strong><br/>
+              ${venue.address}<br/>
+              <a href="${venueLocationUrl}" target="_blank" style="display: inline-block; margin-top: 6px; color: #006b30; font-weight: 700; text-decoration: none;">📍 Open Directions in Google Maps &rarr;</a>
+            </td>
           </tr>
         </table>
         <div style="background: #f8fafc; border-left: 4px solid #006b30; padding: 14px 16px; border-radius: 0 8px 8px 0;">
@@ -308,7 +314,11 @@ export class EmailService {
           </tr>
           <tr>
             <td style="padding: 12px 16px; font-size: 13px; color: #64748b;">Venue Location</td>
-            <td style="padding: 12px 16px; font-size: 12px; color: #334155;"><strong>${venue.name}</strong><br/>${venue.address}</td>
+            <td style="padding: 12px 16px; font-size: 12px; color: #334155;">
+              <strong>${venue.name}</strong><br/>
+              ${venue.address}<br/>
+              <a href="${venueLocationUrl}" target="_blank" style="display: inline-block; margin-top: 6px; color: #006b30; font-weight: 700; text-decoration: none;">📍 Open Directions in Google Maps &rarr;</a>
+            </td>
           </tr>
         </table>
         <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 16px; border-radius: 0 8px 8px 0;">

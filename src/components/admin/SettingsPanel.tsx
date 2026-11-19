@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { store } from '../../services/store';
+import { AuthService } from '../../services/authService';
 import { AuditLogger } from '../../services/auditLogger';
 import { AdminUser, CancellationPolicy, CancellationSettings } from '../../types/schema';
 import { Sliders, Save, RefreshCw, MessageSquare, DollarSign, Clock, PlusCircle, Trash2, ShieldCheck, ArrowRight, AlertCircle, RotateCcw, Mail, Send, CheckCircle2, Database, Radio, MapPin, QrCode, ExternalLink, Info } from 'lucide-react';
@@ -37,6 +38,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
   // Venue Settings & Gate Pass Location QR States
   const [venueQrDataUrl, setVenueQrDataUrl] = useState<string>('');
   const [venueSuccessMsg, setVenueSuccessMsg] = useState<string | null>(null);
+  const [venueSuccessToast, setVenueSuccessToast] = useState<string | null>(null);
 
   // Real-time Venue Location QR Code generation for testing & verification
   useEffect(() => {
@@ -160,15 +162,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
     }
   };
 
-  const handleSaveVenue = (e: React.FormEvent) => {
+  const handleSaveVenue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentAdmin.role === 'staff') {
       alert('Permission denied: Staff accounts cannot modify venue parameters. Only Owners and Managers can update venue settings.');
       return;
     }
-    const targetMapUrl = venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
+    const targetMapUrl = (venue.location_url || venue.google_maps_link || '').trim() || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
     const updatedVenue = {
       ...venue,
+      name: venue.name.trim(),
+      address: venue.address.trim(),
       location_url: targetMapUrl,
       google_maps_link: targetMapUrl
     };
@@ -179,16 +183,24 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
 
     // Sync to backend server
     try {
-      fetch('/api/venue', {
+      await fetch('/api/venue', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...AuthService.getAuthHeaders()
+        },
         body: JSON.stringify({ venue: updatedVenue })
-      }).catch(() => {});
-    } catch {}
+      });
+    } catch (err) {
+      console.warn('Backend venue sync failed:', err);
+    }
 
     // Sync to Supabase
-    SupabaseSyncService.syncVenueToSupabase(updatedVenue).catch(() => {});
+    try {
+      await SupabaseSyncService.syncVenueToSupabase(updatedVenue);
+    } catch {}
 
+    setVenueSuccessToast('Venue settings, address, and Google Maps location link saved successfully!');
     setVenueSuccessMsg('Venue settings, address, and Google Maps location QR link updated successfully!');
     setTimeout(() => setVenueSuccessMsg(null), 5000);
   };
@@ -1144,6 +1156,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
         isOpen={Boolean(clearSuccessToast)}
         message={clearSuccessToast || ''}
         onClose={() => setClearSuccessToast(null)}
+      />
+
+      <Toast
+        isOpen={Boolean(venueSuccessToast)}
+        title="Configuration Saved"
+        message={venueSuccessToast || ''}
+        type="success"
+        onClose={() => setVenueSuccessToast(null)}
       />
 
     </div>

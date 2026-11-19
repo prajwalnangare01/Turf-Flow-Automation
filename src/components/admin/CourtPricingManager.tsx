@@ -415,12 +415,20 @@ export const CourtPricingManager: React.FC<CourtPricingManagerProps> = ({ curren
       }
     } catch (e) {}
 
-    const updatedCourts = [...courts, newCourt];
+    const updatedCourts = [...store.getCourts().filter(c => c.id !== newCourt.id), newCourt];
     store.setCourts(updatedCourts);
     setCourts(updatedCourts);
     SupabaseSyncService.syncCourtToSupabase(newCourt).catch(err => {
       console.warn('❌ [CourtPricingManager] Error syncing new court to Supabase:', err);
     });
+
+    if (typeof window !== 'undefined' && typeof fetch === 'function') {
+      fetch('/api/courts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCourt)
+      }).catch(() => {});
+    }
 
     AuditLogger.log(currentAdmin.id, 'CREATE_COURT', 'Court', newCourt.id, null, newCourt);
 
@@ -654,6 +662,54 @@ export const CourtPricingManager: React.FC<CourtPricingManagerProps> = ({ curren
     });
   };
 
+  const handleRestoreStandardPitches = () => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Restore All Standard Pitches',
+      message: 'Are you sure you want to restore and re-seed all standard venue pitches (Football, Cricket, Badminton, Pickleball)? This will re-enable standard pitches across the venue and online booking.',
+      confirmText: 'Yes, Restore Pitches',
+      variant: 'info',
+      onConfirm: async () => {
+        closeConfirm();
+        try {
+          const restoredCourts = store.restoreDefaultCourts();
+          setCourts([...restoredCourts]);
+          AuditLogger.log(currentAdmin.id, 'RESTORE_COURTS', 'Court', 'all', {
+            restored_count: restoredCourts.length,
+            pitches: restoredCourts.map(c => c.name)
+          });
+
+          // Ensure standard sports exist
+          const currentSports = store.getSports();
+          const defaultSports = store.getDefaultSports();
+          const missingSports = defaultSports.filter(ds => !currentSports.some(cs => cs.id === ds.id));
+          if (missingSports.length > 0) {
+            const merged = [...currentSports, ...missingSports];
+            store.setSports(merged);
+            setSports(merged);
+            for (const ms of missingSports) {
+              SupabaseSyncService.syncSportToSupabase(ms).catch(() => {});
+            }
+          }
+
+          // Sync each restored court to Supabase
+          for (const c of restoredCourts) {
+            SupabaseSyncService.syncCourtToSupabase(c).catch(() => {});
+          }
+
+          // Sync to WhatsApp Automation Server
+          fetch('/api/courts/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ courts: restoredCourts })
+          }).catch(() => {});
+        } catch (err: any) {
+          alert('Failed to restore standard pitches: ' + (err?.message || err));
+        }
+      }
+    });
+  };
+
   const toggleSportSelection = (sportId: string, isEdit: boolean = false) => {
     if (isEdit) {
       if (editSportIds.includes(sportId)) {
@@ -849,15 +905,42 @@ export const CourtPricingManager: React.FC<CourtPricingManagerProps> = ({ curren
           <h3 className="font-headline font-bold text-sm text-on-surface uppercase tracking-wider">
             Configured Pitches ({courts.length})
           </h3>
+          <button
+            type="button"
+            onClick={handleRestoreStandardPitches}
+            className="text-xs font-bold text-primary hover:text-primary-focus bg-primary/10 hover:bg-primary/20 border border-primary/20 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Re-seed all standard venue pitches (Football, Cricket, Badminton, Pickleball)"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Restore All Standard Pitches</span>
+          </button>
         </div>
 
         {courts.length === 0 ? (
-          <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-outline-variant/60 space-y-2 shadow-xs">
+          <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-outline-variant/60 space-y-3 shadow-xs">
             <div className="text-3xl">🏟️</div>
             <h4 className="font-headline font-bold text-sm text-on-surface">No Pitches Configured</h4>
             <p className="text-xs text-on-surface-variant max-w-md mx-auto">
               There are currently no active pitches configured. Click &ldquo;+ Add Pitch&rdquo; above to set up a new pitch.
             </p>
+            <div className="pt-2 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleRestoreStandardPitches}
+                className="btn-secondary text-xs font-bold py-2 px-3.5 rounded-xl flex items-center gap-1.5 border border-primary/30 text-primary hover:bg-primary/5 cursor-pointer transition shadow-2xs"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Restore All Standard Pitches
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddCourtModal(true)}
+                className="btn-primary text-xs font-bold py-2 px-3.5 rounded-xl flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                + Add Pitch
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

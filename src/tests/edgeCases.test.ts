@@ -2319,17 +2319,71 @@ async function runResendTests() {
   assert(verifyBooking.refund_amount === 1600, 'Original refund amount ₹1600 is preserved without corruption');
   console.log('✅ PASSED: Refunded state is immutable and protected from re-execution');
 
-  // --- TEST 38: Admin Database Clear & Purge Contract ---
-  console.log('\n--- TEST 38: Admin Database Clear & Purge Contract ---');
+  // --- TEST 38: Venue Identity & Google Maps Navigation Link Reflection in Booking Passes ---
+  console.log('\n--- TEST 38: Venue Identity & Google Maps Navigation Link Reflection in Booking Passes ---');
 
-  // 38.1 Insert test records
+  // 38.1 Update venue name and Google Maps location URL
+  const originalVenue = { ...store.getVenue() };
+  const updatedVenueTest = {
+    ...originalVenue,
+    name: 'TurfFlow Pro Stadium Pune',
+    address: 'Survey 108, Viman Nagar Airport Road, Pune 411014',
+    location_url: 'https://maps.google.com/?q=18.5678,73.9123',
+    google_maps_link: 'https://maps.google.com/?q=18.5678,73.9123'
+  };
+  store.setVenue(updatedVenueTest);
+
+  // 38.2 Verify store returns updated venue
+  const fetchedVenue = store.getVenue();
+  assert(fetchedVenue.name === 'TurfFlow Pro Stadium Pune', 'Venue name updated in store');
+  assert(fetchedVenue.location_url === 'https://maps.google.com/?q=18.5678,73.9123', 'Venue location_url updated in store');
+  assert(fetchedVenue.google_maps_link === 'https://maps.google.com/?q=18.5678,73.9123', 'Venue google_maps_link updated in store');
+  console.log('✅ PASSED: store.setVenue accurately updates name and Google Maps navigation link');
+
+  // 38.3 Create a new booking under the updated venue
+  const t38BookingRes = PostgresEngine.createBooking({
+    booking_ref: `TRF-TEST38-${Date.now()}`,
+    customer_id: t36Customer.id,
+    court_id: targetCourt.id,
+    sport_id: 'sp-football',
+    booking_date: '2026-12-10',
+    start_time: '20:00',
+    end_time: '21:00',
+    source: 'online',
+    status: 'confirmed',
+    total_amount: 1500,
+    discount_amount: 0
+  });
+  assert(t38BookingRes.success && Boolean(t38BookingRes.booking), 'New booking created under updated venue');
+
+  // 38.4 Verify booking confirmation email reflects new venue name and Google Maps link
+  const t38EmailRes = await EmailService.sendBookingConfirmation({
+    booking: t38BookingRes.booking!,
+    customer: t36Customer,
+    courtName: targetCourt.name,
+    venue: fetchedVenue
+  });
+  assert(t38EmailRes.success, 'Booking confirmation email sent');
+  assert(Boolean(t38EmailRes.html?.includes('TurfFlow Pro Stadium Pune')), 'Email HTML includes updated venue name');
+  assert(Boolean(t38EmailRes.html?.includes('https://maps.google.com/?q=18.5678,73.9123')), 'Email HTML includes updated Google Maps location link');
+  assert(Boolean(t38EmailRes.text?.includes('TurfFlow Pro Stadium Pune')), 'Email text includes updated venue name');
+  assert(Boolean(t38EmailRes.text?.includes('https://maps.google.com/?q=18.5678,73.9123')), 'Email text includes updated Google Maps link');
+  console.log('✅ PASSED: Every new booking pass & confirmation email contains the updated venue name and Google Maps navigation link');
+
+  // Restore original venue
+  store.setVenue(originalVenue);
+
+  // --- TEST 39: Admin Database Clear & Purge Contract ---
+  console.log('\n--- TEST 39: Admin Database Clear & Purge Contract ---');
+
+  // 39.1 Insert test records
   const sampleCustomer = store.getCustomers()[0];
   sampleCustomer.total_bookings = 5;
   sampleCustomer.total_spent = 6000;
   store.setSlotLocks([{ court_id: 'crt-001', date: '2026-12-05', start_time: '18:00', expires_at: Date.now() + 60000, locked_by: 'test' }]);
   assert(store.getBookings().length > 0, 'Bookings exist before operational purge');
 
-  // 38.2 Execute clearOperationalData
+  // 39.2 Execute clearOperationalData
   store.clearOperationalData();
   assert(store.getBookings().length === 0, 'Operational clear wiped all bookings');
   assert(store.getPayments().length === 0, 'Operational clear wiped all payments');
@@ -2340,7 +2394,7 @@ async function runResendTests() {
   assert(store.getCustomers().every(c => c.total_bookings === 0 && c.total_spent === 0), 'Customer spend counters reset to 0');
   console.log('✅ PASSED: store.clearOperationalData() cleanly purged operational data while preserving configurations');
 
-  // 38.3 Execute clearAllData (factory reset)
+  // 39.3 Execute clearAllData (factory reset)
   store.clearAllData(true);
   assert(store.getBookings().length === 0, 'Factory reset has 0 bookings');
   assert(store.getAdminUsers().length > 0, 'Factory reset preserved admin accounts');

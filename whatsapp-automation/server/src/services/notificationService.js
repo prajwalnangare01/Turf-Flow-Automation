@@ -36,7 +36,13 @@ export class NotificationService {
    * Send WhatsApp Booking Confirmation Card & PDF Gate Pass
    */
   static sendBookingConfirmation(booking) {
-    const venue = store.getVenue();
+    const venue = booking.venue || {
+      ...store.getVenue(),
+      ...(booking.venue_name ? { name: booking.venue_name } : {}),
+      ...(booking.venue_address ? { address: booking.venue_address } : {}),
+      ...(booking.venue_location_url ? { location_url: booking.venue_location_url, google_maps_link: booking.venue_location_url } : {})
+    };
+    const venueLocationUrl = booking.venue_location_url || booking.location_url || venue.location_url || venue.google_maps_link || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
     const court = store.getCourts().find(c => c.id === booking.court_id);
     const sports = store.getSports();
     const sport = sports.find(s => s.id === booking.sport_id);
@@ -49,7 +55,7 @@ export class NotificationService {
           ? validSlots.map(s => `${WhatsAppFormatter.formatTime(s.start_time)} — ${WhatsAppFormatter.formatTime(s.end_time)}`).join(', ')
           : (booking.formatted_slots && !booking.formatted_slots.includes('undefined') && booking.formatted_slots.trim() !== '–' ? booking.formatted_slots : 'Time slot confirmed'));
 
-    const message = `✅ *PAYMENT CONFIRMED — TURFFLOW ARENA* ✅\n` +
+    const message = `✅ *PAYMENT CONFIRMED — ${venue.name.toUpperCase()}* ✅\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
       `🎉 *Payment Received & Booking Confirmed!*\n\n` +
       `🔑 *Gate Check-in OTP:* *${otpCode}*\n` +
@@ -60,7 +66,7 @@ export class NotificationService {
       `💰 *Amount Paid:* ₹${booking.total_order_amount || booking.total_amount || 0} (via Razorpay UPI)\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
       `📍 *Venue Address:* ${venue.address}\n` +
-      `🗺️ *Google Maps:* ${venue.google_maps_link}\n` +
+      `🗺️ *Google Maps:* ${venueLocationUrl}\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
       `📄 *Your official PDF Gate Pass & Payment Receipt is attached below!* Show the PDF or your 4-digit OTP *${otpCode}* at the gate.\n\n` +
       `⚠️ *Pitch Rules:* Turf shoes only (no metal spikes). Please arrive 10 mins early.\n\n` +

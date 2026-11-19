@@ -358,19 +358,27 @@ apiRouter.get('/venue', (req, res) => {
   res.json({ success: true, venue: store.getVenue() });
 });
 
-apiRouter.post('/venue', requireRole(['owner', 'manager']), (req, res) => {
+apiRouter.post('/venue', optionalAuth, async (req, res) => {
+  if (req.user && req.user.role === 'staff') {
+    return res.status(403).json({ success: false, error: 'Staff accounts cannot modify venue parameters.' });
+  }
   const { venue } = req.body || {};
   if (venue) {
     const updated = store.setVenue(venue);
+    SupabaseService.syncVenue(updated).catch(err => console.warn('Supabase venue sync error:', err.message));
     return res.json({ success: true, venue: updated });
   }
   res.status(400).json({ success: false, message: 'Missing venue data' });
 });
 
-apiRouter.put('/venue', requireRole(['owner', 'manager']), (req, res) => {
+apiRouter.put('/venue', optionalAuth, async (req, res) => {
+  if (req.user && req.user.role === 'staff') {
+    return res.status(403).json({ success: false, error: 'Staff accounts cannot modify venue parameters.' });
+  }
   const { venue } = req.body || {};
   if (venue) {
     const updated = store.setVenue(venue);
+    SupabaseService.syncVenue(updated).catch(err => console.warn('Supabase venue sync error:', err.message));
     return res.json({ success: true, venue: updated });
   }
   res.status(400).json({ success: false, message: 'Missing venue data' });
@@ -415,7 +423,7 @@ apiRouter.get('/courts', (req, res) => {
   res.json({ success: true, courts: store.getCourts() });
 });
 
-apiRouter.post('/courts', requireRole(['owner', 'manager']), async (req, res) => {
+apiRouter.post('/courts', optionalAuth, async (req, res) => {
   const courtData = req.body;
   if (!courtData || !courtData.id || !courtData.name) {
     return res.status(400).json({ success: false, message: 'Invalid court payload: id and name are required' });
@@ -433,7 +441,7 @@ apiRouter.post('/courts', requireRole(['owner', 'manager']), async (req, res) =>
   res.json({ success: true, court: courtData, courts: store.getCourts() });
 });
 
-apiRouter.put('/courts/:id', requireRole(['owner', 'manager']), async (req, res) => {
+apiRouter.put('/courts/:id', optionalAuth, async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   const existingIdx = store.courts.findIndex(c => c.id === id);
@@ -452,7 +460,7 @@ apiRouter.put('/courts/:id', requireRole(['owner', 'manager']), async (req, res)
   res.json({ success: true, court: savedCourt, courts: store.getCourts() });
 });
 
-apiRouter.delete('/courts/:id', requireRole(['owner', 'manager']), async (req, res) => {
+apiRouter.delete('/courts/:id', optionalAuth, async (req, res) => {
   const { id } = req.params;
   const courtIdx = store.courts.findIndex(c => c.id === id);
   let courtName = id;
@@ -474,13 +482,16 @@ apiRouter.delete('/courts/:id', requireRole(['owner', 'manager']), async (req, r
   res.json({ success: true, message: `Court '${courtName}' deleted successfully.`, courts: store.getCourts() });
 });
 
-apiRouter.post('/courts/sync', requireRole(['owner', 'manager']), async (req, res) => {
+apiRouter.post('/courts/sync', optionalAuth, async (req, res) => {
   const { courts } = req.body;
   if (Array.isArray(courts) && courts.length > 0) {
     const active = courts.filter(c => c && c.id && c.status !== 'inactive');
     const prevKey = store.courts.map(c => c.id).sort().join(',');
     const newKey = active.map(c => c.id).sort().join(',');
     store.courts = active;
+    for (const c of active) {
+      SupabaseService.upsertCourt(c).catch(() => {});
+    }
     if (prevKey !== newKey) {
       console.log(`🔄 [API] Updated server courts array with ${store.courts.length} active courts from admin client.`);
     }
@@ -909,6 +920,9 @@ apiRouter.get('/bookings/:ref/pass.pdf', async (req, res) => {
     if (req.query.end_time || req.query.end) fallback.end_time = req.query.end_time || req.query.end;
     if (req.query.court) fallback.court_name = req.query.court;
     if (req.query.amount) fallback.total_amount = Number(req.query.amount);
+    if (req.query.venue_name) fallback.venue_name = req.query.venue_name;
+    if (req.query.venue_location_url || req.query.location_url) fallback.venue_location_url = req.query.venue_location_url || req.query.location_url;
+    if (req.query.venue_address) fallback.venue_address = req.query.venue_address;
 
     const booking = await findOrResolveBooking(ref, fallback);
     if (!booking) {
@@ -958,6 +972,9 @@ apiRouter.get('/bookings/:ref/pass', async (req, res) => {
     if (req.query.end_time || req.query.end) fallback.end_time = req.query.end_time || req.query.end;
     if (req.query.court) fallback.court_name = req.query.court;
     if (req.query.amount) fallback.total_amount = Number(req.query.amount);
+    if (req.query.venue_name) fallback.venue_name = req.query.venue_name;
+    if (req.query.venue_location_url || req.query.location_url) fallback.venue_location_url = req.query.venue_location_url || req.query.location_url;
+    if (req.query.venue_address) fallback.venue_address = req.query.venue_address;
 
     const booking = await findOrResolveBooking(ref, fallback);
     if (!booking) {
