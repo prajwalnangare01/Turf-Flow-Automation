@@ -3,7 +3,7 @@ import {
   MessageSquare, Bot, CheckCircle2, Zap, 
   ExternalLink, Phone, Send, RotateCw, Sparkles, AlertCircle, 
   Ticket, Copy, Check, Users, ArrowRight, QrCode, Key, LogOut,
-  Sun, Moon
+  Sun, Moon, Activity
 } from 'lucide-react';
 import { store } from '../../services/store';
 import { AuthService } from '../../services/authService';
@@ -244,20 +244,20 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
       {/* PROPER WHATSAPP PHONE PAIRING SECTION */}
-      <div className="bg-white rounded-2xl p-6 border border-emerald-500/30 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-2xl shadow-xs">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-emerald-500/30 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-100 pb-4 mb-4">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-xl sm:text-2xl shadow-xs shrink-0 mt-0.5 sm:mt-0">
               📱
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-headline font-bold text-base text-slate-900">
-                  WhatsApp Device Link: +91 {activeTenDigitPhone}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h3 className="font-headline font-bold text-sm sm:text-base text-slate-900 break-words">
+                  WhatsApp Device Link: <span className="font-mono text-emerald-700">+91 {activeTenDigitPhone}</span>
                 </h3>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${
                   waClientStatus.status === 'connected'
                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                     : 'bg-amber-100 text-amber-800 border border-amber-200'
@@ -265,28 +265,28 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
                   {waClientStatus.status === 'connected' ? 'Connected' : 'Pairing Required'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-1 sm:mt-0.5 leading-relaxed">
                 Link your real WhatsApp account on phone <strong>+91 {activeTenDigitPhone}</strong> to allow this server to send & receive messages.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-1 sm:pt-0">
             {waClientStatus.status === 'connected' ? (
               <button
                 onClick={handleDisconnectWhatsApp}
-                className="btn-secondary text-xs px-3.5 py-2 text-rose-600 hover:bg-rose-50 border-rose-200 flex items-center gap-1.5 font-bold"
+                className="btn-secondary text-xs px-3.5 py-2 text-rose-600 hover:bg-rose-50 border-rose-200 flex items-center justify-center gap-1.5 font-bold w-full sm:w-auto"
               >
-                <LogOut className="w-3.5 h-3.5" /> Disconnect Device
+                <LogOut className="w-3.5 h-3.5 shrink-0" /> <span>Disconnect Device</span>
               </button>
             ) : (
               <button
                 onClick={handleRequestPairingCode}
                 disabled={isPairingLoading}
-                className="btn-cta text-xs px-4 py-2 font-headline font-bold flex items-center gap-2 shadow-xs"
+                className="btn-cta text-xs px-4 py-2 font-headline font-bold flex items-center justify-center gap-2 shadow-xs w-full sm:w-auto"
               >
-                <Key className="w-3.5 h-3.5" />
-                {isPairingLoading ? 'Generating Code...' : 'Get 8-Digit Pairing Code'}
+                <Key className="w-3.5 h-3.5 shrink-0" />
+                <span>{isPairingLoading ? 'Generating Code...' : 'Get 8-Digit Pairing Code'}</span>
               </button>
             )}
           </div>
@@ -294,14 +294,14 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
 
         {/* Pairing Instructions & Code Display */}
         {waClientStatus.status === 'connected' ? (
-          <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <div>
-                <p className="font-headline font-bold text-emerald-950 text-xs">
+          <div className="bg-emerald-50 rounded-xl p-3.5 sm:p-4 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3 min-w-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+              <div className="min-w-0">
+                <p className="font-headline font-bold text-emerald-950 text-xs sm:text-sm">
                   Agent is actively running on +91 {activeTenDigitPhone}!
                 </p>
-                <p className="text-[11px] text-emerald-800 mt-0.5">
+                <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
                   Any customer who texts this number on WhatsApp will receive instantaneous, AI-powered slot bookings and confirmations.
                 </p>
               </div>
@@ -310,94 +310,94 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
               href={`https://wa.me/91${activeTenDigitPhone}?text=${encodeURIComponent('Hi TurfFlow Arena!')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-xs shrink-0"
+              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 sm:py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition shadow-xs shrink-0 w-full sm:w-auto text-center"
             >
               <span>Test on WhatsApp</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
             </a>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-stretch">
             
-            {/* Option 1: Live QR Code Scanner (Fastest & Most Reliable) */}
+            {/* Option 1: Live QR Code Scanner */}
             <div className="md:col-span-5 bg-white rounded-xl p-4 text-center border-2 border-emerald-500/30 shadow-xs flex flex-col items-center justify-center">
               <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider block mb-2 border border-emerald-200">
                 Recommended: Scan QR with WhatsApp
               </span>
 
               {waClientStatus.qrDataUrl ? (
-                <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-xs inline-block mb-2">
+                <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-xs inline-block mb-2 max-w-full">
                   <img
                     src={waClientStatus.qrDataUrl}
                     alt="WhatsApp Web QR Code"
-                    className="w-48 h-48 object-contain rounded-lg"
+                    className="w-40 h-40 sm:w-48 sm:h-48 object-contain rounded-lg mx-auto"
                   />
                 </div>
               ) : (
-                <div className="w-48 h-48 bg-slate-100 rounded-xl flex flex-col items-center justify-center border border-dashed border-slate-300 mb-2">
+                <div className="w-40 h-40 sm:w-48 sm:h-48 bg-slate-100 rounded-xl flex flex-col items-center justify-center border border-dashed border-slate-300 mb-2">
                   <QrCode className="w-10 h-10 text-slate-400 mb-2 animate-pulse" />
                   <span className="text-[11px] text-slate-500 font-medium">Generating QR Code...</span>
                 </div>
               )}
 
-              <p className="text-[11px] text-slate-600 font-medium max-w-xs">
+              <p className="text-[11px] text-slate-600 font-medium max-w-xs leading-relaxed">
                 Open <strong>WhatsApp</strong> on phone &gt; <strong>Linked Devices</strong> &gt; <strong>Link a Device</strong> &gt; Scan this QR.
               </p>
             </div>
 
             {/* Option 2: 8-digit Pairing Code */}
-            <div className="md:col-span-7 bg-slate-900 rounded-xl p-5 text-white border border-slate-800 flex flex-col justify-between">
+            <div className="md:col-span-7 bg-slate-900 rounded-xl p-4 sm:p-5 text-white border border-slate-800 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
                   <span className="text-[10px] text-emerald-400 font-mono font-bold uppercase tracking-wider">
                     Alternative: Link With Phone Number
                   </span>
                   <span className="text-[10px] text-slate-400 font-mono">+91 {phoneInput || targetPhoneNumber}</span>
                 </div>
 
-                <p className="text-xs text-slate-300 mb-3">
-                  If you prefer not to scan the QR code, tap <strong>&ldquo;Link with phone number instead&rdquo;</strong> at the bottom of the WhatsApp scanner screen and enter this code:
+                <p className="text-xs text-slate-300 mb-3 leading-relaxed">
+                  If you prefer not to scan the QR code (e.g. configuring directly on phone), tap <strong>&ldquo;Link with phone number instead&rdquo;</strong> in WhatsApp and enter this code:
                 </p>
 
-                <div className="flex items-center gap-2 mb-3 bg-slate-800/90 p-2 rounded-lg border border-slate-700">
-                  <span className="text-xs text-slate-400 font-mono font-bold">+91</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-3 bg-slate-800/90 p-1.5 sm:p-2 rounded-lg border border-slate-700">
+                  <span className="text-xs text-slate-400 font-mono font-bold shrink-0 pl-1">+91</span>
                   <input
                     type="text"
                     value={phoneInput}
                     onChange={e => setPhoneInput(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="Enter 10-digit number"
-                    className="bg-slate-900 border border-slate-700 text-white rounded px-2.5 py-1 text-xs font-mono flex-1 focus:outline-emerald-500"
+                    placeholder="10-digit number"
+                    className="bg-slate-900 border border-slate-700 text-white rounded px-2.5 py-1.5 text-xs font-mono min-w-0 flex-1 focus:outline-emerald-500"
                   />
                   <button
                     onClick={() => handleRequestPairingCode(phoneInput)}
                     disabled={isPairingLoading || phoneInput.length < 10}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2.5 py-1 rounded font-semibold transition disabled:opacity-50 shrink-0"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded font-semibold transition disabled:opacity-50 shrink-0"
                   >
                     {isPairingLoading ? 'Generating...' : 'Get Code'}
                   </button>
                 </div>
 
                 <div className="bg-slate-800/80 rounded-lg p-3 text-center border border-slate-700 my-2">
-                  <div className="text-2xl sm:text-3xl font-mono font-extrabold tracking-widest text-emerald-400 select-all">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-mono font-extrabold tracking-wider sm:tracking-widest text-emerald-400 select-all break-all">
                     {waClientStatus.pairingCode || 'Generating...'}
                   </div>
                   <button
                     onClick={() => handleCopy(waClientStatus.pairingCode || '')}
                     disabled={!waClientStatus.pairingCode}
-                    className="mt-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold px-3 py-1 rounded-md border border-slate-600 inline-flex items-center gap-1.5 transition disabled:opacity-50"
+                    className="mt-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold px-3 py-1.5 rounded-md border border-slate-600 inline-flex items-center gap-1.5 transition disabled:opacity-50"
                   >
-                    {copiedPairingCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedPairingCode ? <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Copy className="w-3.5 h-3.5 shrink-0" />}
                     <span>{copiedPairingCode ? 'Copied!' : 'Copy Code'}</span>
                   </button>
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+              <div className="mt-3 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span>💡 Make sure your phone is connected to the internet.</span>
                 <button
-                  onClick={handleRequestPairingCode}
+                  onClick={() => handleRequestPairingCode(phoneInput)}
                   disabled={isPairingLoading}
-                  className="text-emerald-400 hover:text-emerald-300 font-semibold underline text-[11px]"
+                  className="text-emerald-400 hover:text-emerald-300 font-semibold underline text-[11px] text-left sm:text-right"
                 >
                   {isPairingLoading ? 'Refreshing...' : 'Regenerate Code'}
                 </button>
@@ -408,21 +408,43 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
         )}
       </div>
 
+      {/* Backend & AI Agent Health Bar */}
+      <div className="flex flex-wrap items-center gap-2 text-[11px] bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-600">
+        <span className="font-bold font-headline uppercase tracking-wider text-slate-700 flex items-center gap-1.5 shrink-0">
+          <Activity className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          Agent Health:
+        </span>
+        <span className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono text-[10px] shrink-0">
+          Status: <strong className={agentHealth.status === 'ok' ? 'text-emerald-700' : 'text-amber-700'}>{agentHealth.status}</strong>
+        </span>
+        <span className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono text-[10px] shrink-0">
+          DB Mode: <strong className="text-slate-800">{agentHealth.databaseMode}</strong>
+        </span>
+        <span className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono text-[10px] shrink-0">
+          Realtime: <strong className={agentHealth.supabaseRealtime ? 'text-emerald-700' : 'text-slate-500'}>{agentHealth.supabaseRealtime ? 'Active' : 'Polling'}</strong>
+        </span>
+        {agentHealth.activeLocks > 0 && (
+          <span className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono text-[10px] text-amber-700 font-bold shrink-0">
+            Locks: {agentHealth.activeLocks}
+          </span>
+        )}
+      </div>
+
       {/* Main Grid: Live Testing Console & WhatsApp Inbound Ledger */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
 
         {/* LEFT: Live Interactive WhatsApp Tester (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-outline-variant/60 shadow-sm flex flex-col h-[600px] overflow-hidden">
+        <div className="lg:col-span-5 bg-white rounded-2xl border border-outline-variant/60 shadow-sm flex flex-col h-[480px] sm:h-[540px] lg:h-[600px] overflow-hidden">
           
           {/* Header */}
-          <div className="bg-[#075E54] text-white p-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-sm font-bold shadow-sm">
+          <div className="bg-[#075E54] text-white p-3 sm:p-3.5 flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-sm font-bold shadow-sm shrink-0">
                 ⚽
               </div>
-              <div>
-                <h3 className="text-xs font-headline font-bold leading-none">Agent Conversation Tester</h3>
-                <p className="text-[10px] text-emerald-200 mt-0.5">Test conversational responses locally</p>
+              <div className="min-w-0">
+                <h3 className="text-xs font-headline font-bold leading-none truncate">Agent Conversation Tester</h3>
+                <p className="text-[10px] text-emerald-200 mt-0.5 truncate">Test conversational responses locally</p>
               </div>
             </div>
             <button
@@ -436,19 +458,19 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
                 ]);
               }}
               title="Clear Test Conversation"
-              className="text-emerald-100 hover:text-white text-xs bg-white/10 hover:bg-white/20 p-1.5 rounded-lg transition"
+              className="text-emerald-100 hover:text-white text-xs bg-white/10 hover:bg-white/20 p-1.5 rounded-lg transition shrink-0"
             >
               <RotateCw className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Test Phone Profile Selector */}
-          <div className="bg-slate-50 border-b border-slate-200 px-3 py-2 text-xs flex items-center justify-between">
-            <span className="text-slate-600 font-medium">Customer Phone:</span>
+          <div className="bg-slate-50 border-b border-slate-200 px-3 py-2 text-xs flex items-center justify-between gap-2 shrink-0">
+            <span className="text-slate-600 font-medium shrink-0">Customer Phone:</span>
             <input
               value={simulatedPhone}
               onChange={e => setSimulatedPhone(e.target.value)}
-              className="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-mono font-bold text-slate-800 w-36 text-center focus:outline-emerald-600"
+              className="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-mono font-bold text-slate-800 w-32 sm:w-36 text-center focus:outline-emerald-600 shrink-0"
             />
           </div>
 
@@ -459,11 +481,11 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
               return (
                 <div key={i} className={`flex ${isAgent ? 'justify-start' : 'justify-end'}`}>
                   <div
-                    className={`max-w-[85%] px-3.5 py-2 rounded-xl text-xs leading-relaxed shadow-xs ${
+                    className={`max-w-[88%] sm:max-w-[85%] px-3.5 py-2 rounded-xl text-xs leading-relaxed shadow-xs ${
                       isAgent ? 'bg-white text-slate-900 rounded-tl-xs' : 'bg-[#d9fdd3] text-slate-950 rounded-tr-xs'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{msg.text.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, '$3/$2/$1')}</div>
+                    <div className="whitespace-pre-wrap break-words">{msg.text.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, '$3/$2/$1')}</div>
                     <div className="text-[10px] text-slate-400 text-right mt-1">{msg.time}</div>
                   </div>
                 </div>
@@ -479,22 +501,25 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
           </div>
 
           {/* Quick Test Prompt Chips */}
-          <div className="bg-slate-100 border-t border-slate-200 p-2 flex gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="bg-slate-100 border-t border-slate-200 p-2 flex gap-1.5 overflow-x-auto no-scrollbar scroll-smooth shrink-0">
             <button
+              type="button"
               onClick={() => handleSendMessage('Show football slots for tomorrow')}
-              className="bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition"
+              className="bg-white hover:bg-emerald-50 active:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition"
             >
               ⚽ Football Tomorrow
             </button>
             <button
+              type="button"
               onClick={() => handleSendMessage('Book Turf A tomorrow at 8pm')}
-              className="bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition"
+              className="bg-white hover:bg-emerald-50 active:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition"
             >
               🎟️ Book Turf A 8pm
             </button>
             <button
+              type="button"
               onClick={() => handleSendMessage('My bookings')}
-              className="bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition"
+              className="bg-white hover:bg-emerald-50 active:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition"
             >
               📋 My Bookings
             </button>
@@ -506,19 +531,19 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
               e.preventDefault();
               handleSendMessage();
             }}
-            className="p-2 bg-[#f0f2f5] border-t border-slate-200 flex items-center gap-2"
+            className="p-2 sm:p-2.5 bg-[#f0f2f5] border-t border-slate-200 flex items-center gap-2 shrink-0"
           >
             <input
               type="text"
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
-              placeholder="Type test message (e.g. Check cricket slots)..."
-              className="flex-1 bg-white text-xs rounded-full px-3.5 py-2 border border-slate-300 focus:outline-emerald-600 text-slate-800"
+              placeholder="Type message (e.g. Check slots)..."
+              className="min-w-0 flex-1 bg-white text-xs rounded-full px-3.5 py-2 border border-slate-300 focus:outline-emerald-600 text-slate-800 placeholder:text-slate-400 placeholder:text-[11px] sm:placeholder:text-xs"
             />
             <button
               type="submit"
               disabled={!chatInput.trim() || isSending}
-              className="w-8 h-8 rounded-full bg-[#00a884] text-white flex items-center justify-center hover:bg-[#069576] disabled:opacity-50 transition"
+              className="w-8 h-8 rounded-full bg-[#00a884] text-white flex items-center justify-center hover:bg-[#069576] active:scale-95 disabled:opacity-50 transition shrink-0"
             >
               <Send className="w-3.5 h-3.5" />
             </button>
@@ -527,25 +552,101 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
         </div>
 
         {/* RIGHT: WhatsApp Bookings Ledger (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 space-y-4 sm:space-y-6">
 
           {/* Bookings Originating from WhatsApp */}
-          <div className="bg-white rounded-2xl p-5 border border-outline-variant/60 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-outline-variant/60 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
               <div>
                 <h3 className="text-sm font-headline font-bold text-on-surface flex items-center gap-2">
-                  <Ticket className="w-4 h-4 text-emerald-600" />
+                  <Ticket className="w-4 h-4 text-emerald-600 shrink-0" />
                   Live WhatsApp Bookings Ledger
                 </h3>
-                <p className="text-[11px] text-on-surface-variant">Bookings created via WhatsApp AI concierge and synced to Supabase</p>
+                <p className="text-[11px] text-on-surface-variant leading-tight mt-0.5">
+                  Bookings created via WhatsApp AI concierge and synced to Supabase
+                </p>
               </div>
-              <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-mono font-bold">
+              <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-mono font-bold self-start sm:self-auto shrink-0">
                 {whatsappBookings.length} Total
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            {/* MOBILE CARD VIEW (screens < 768px) */}
+            <div className="md:hidden space-y-2.5">
+              {whatsappBookings.length === 0 ? (
+                <div className="py-8 text-center text-xs text-on-surface-variant bg-surface-container-low/40 rounded-xl border border-outline-variant/30">
+                  No WhatsApp bookings created yet.
+                </div>
+              ) : (
+                whatsappBookings.map(b => (
+                  <div
+                    key={b.id}
+                    className="p-3 bg-surface-container-low/50 hover:bg-surface-container-low rounded-xl border border-outline-variant/40 space-y-2.5 transition"
+                  >
+                    {/* Top row: Ref, Status, Price */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono font-bold text-xs text-primary truncate">{b.booking_ref}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold font-mono ${
+                          b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800' :
+                          b.status === 'pending_payment' ? 'bg-amber-100 text-amber-800 animate-pulse' :
+                          'bg-rose-100 text-rose-800'
+                        }`}>
+                          {b.status}
+                        </span>
+                        <span className="font-bold text-xs text-emerald-600 font-mono">₹{b.total_amount}</span>
+                      </div>
+                    </div>
+
+                    {/* Middle row: Court name, date & time with day/night icon */}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-outline-variant/20">
+                      <span className="font-semibold text-on-surface truncate">{getCourtName(b.court_id)}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <div
+                          className={`p-0.5 rounded shrink-0 flex items-center justify-center ${
+                            parseInt(b.start_time.split(':')[0], 10) >= 18 || parseInt(b.start_time.split(':')[0], 10) < 5
+                              ? 'bg-indigo-50 text-indigo-500'
+                              : 'bg-amber-50 text-amber-500'
+                          }`}
+                        >
+                          {parseInt(b.start_time.split(':')[0], 10) >= 18 || parseInt(b.start_time.split(':')[0], 10) < 5 ? (
+                            <Moon className="w-2.5 h-2.5" />
+                          ) : (
+                            <Sun className="w-2.5 h-2.5" />
+                          )}
+                        </div>
+                        <span className="text-[10px] text-on-surface-variant font-medium">
+                          {formatDateDDMMYYYY(b.booking_date)} @ {formatTime12hPlain(b.start_time)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom row: Action */}
+                    <div className="pt-1 flex items-center justify-end">
+                      {b.status === 'pending_payment' ? (
+                        <button
+                          onClick={() => handleConfirmPayment(b.booking_ref)}
+                          className="btn-cta text-[11px] px-3 py-1.5 font-bold shadow-xs w-full flex items-center justify-center gap-1"
+                        >
+                          Simulate Payment Received
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Synced to Supabase</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* DESKTOP TABLE VIEW (screens >= 768px) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[500px]">
                 <thead className="bg-surface-container-low text-on-surface-variant font-headline font-bold text-[11px] uppercase tracking-wider border-b border-outline-variant/40">
                   <tr>
                     <th className="py-2.5 px-3">Reference</th>
@@ -601,7 +702,7 @@ export const WhatsAppManagerTab: React.FC<Props> = ({ currentAdmin }) => {
                           {b.status === 'pending_payment' ? (
                             <button
                               onClick={() => handleConfirmPayment(b.booking_ref)}
-                              className="btn-cta text-[10px] px-2.5 py-1 font-bold shadow-xs"
+                              className="btn-cta text-[10px] px-2.5 py-1 font-bold shadow-xs whitespace-nowrap"
                             >
                               Simulate Pay
                             </button>

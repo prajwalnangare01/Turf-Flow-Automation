@@ -101,6 +101,18 @@ export const AuditLogViewer: React.FC = () => {
     if (action === 'UPDATE_VENUE_SETTINGS') {
       return { label: 'Updated Venue Settings', bg: 'bg-indigo-100 text-indigo-900 border-indigo-300', isEmail: false };
     }
+    if (action === 'UPDATE_VENUE_IDENTITY') {
+      return { label: 'Updated Venue Identity', bg: 'bg-indigo-100 text-indigo-900 border-indigo-300', isEmail: false };
+    }
+    if (action === 'UPDATE_VENUE_LOCATION') {
+      return { label: 'Updated Venue Location & QR Link', bg: 'bg-emerald-100 text-emerald-900 border-emerald-300', isEmail: false };
+    }
+    if (action === 'UPDATE_TAX_BOOKING_RULES') {
+      return { label: 'Updated Tax & Booking Rules', bg: 'bg-amber-100 text-amber-900 border-amber-300', isEmail: false };
+    }
+    if (action === 'UPDATE_NOTIFICATION_SETTINGS') {
+      return { label: 'Updated Notification Channels & SMTP', bg: 'bg-sky-100 text-sky-900 border-sky-300', isEmail: false };
+    }
 
     return { 
       label: action.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), 

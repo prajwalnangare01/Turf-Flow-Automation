@@ -248,42 +248,42 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onSwitchToCustomer }) => {
       </header>
 
       {/* Metric Cards Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-          <div className="bg-white p-5 rounded-xl border border-outline-variant/50 shadow-sm space-y-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-xs">
+          <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-outline-variant/50 shadow-sm space-y-1.5 sm:space-y-2">
             <div className="flex justify-between items-center text-on-surface-variant font-headline font-bold text-xs uppercase tracking-wider">
-              <span>Today's Bookings</span>
-              <Calendar className="w-4 h-4 text-primary" />
+              <span className="truncate">Today's Bookings</span>
+              <Calendar className="w-4 h-4 text-primary shrink-0" />
             </div>
-            <p className="text-3xl font-headline font-extrabold text-on-surface">{todayBookings.length}</p>
-            <p className="text-[11px] text-primary font-semibold">Active pitches booked</p>
+            <p className="text-2xl sm:text-3xl font-headline font-extrabold text-on-surface">{todayBookings.length}</p>
+            <p className="text-[11px] text-primary font-semibold truncate">Active pitches booked</p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-outline-variant/50 shadow-sm space-y-2">
+          <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-outline-variant/50 shadow-sm space-y-1.5 sm:space-y-2">
             <div className="flex justify-between items-center text-on-surface-variant font-headline font-bold text-xs uppercase tracking-wider">
-              <span>Today's Revenue</span>
-              <Zap className="w-4 h-4 text-secondary" />
+              <span className="truncate">Today's Revenue</span>
+              <Zap className="w-4 h-4 text-secondary shrink-0" />
             </div>
-            <p className="text-3xl font-headline font-extrabold text-primary">₹{todayRevenue.toLocaleString()}</p>
-            <p className="text-[11px] text-on-surface-variant font-medium">Verified Razorpay & Walk-in</p>
+            <p className="text-2xl sm:text-3xl font-headline font-extrabold text-primary">₹{todayRevenue.toLocaleString()}</p>
+            <p className="text-[11px] text-on-surface-variant font-medium truncate">Verified Razorpay & Walk-in</p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-outline-variant/50 shadow-sm space-y-2">
+          <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-outline-variant/50 shadow-sm space-y-1.5 sm:space-y-2">
             <div className="flex justify-between items-center text-on-surface-variant font-headline font-bold text-xs uppercase tracking-wider">
-              <span>Live Slot Locks</span>
-              <Lock className="w-4 h-4 text-sky-600" />
+              <span className="truncate">Live Slot Locks</span>
+              <Lock className="w-4 h-4 text-sky-600 shrink-0" />
             </div>
-            <p className="text-3xl font-headline font-extrabold text-sky-700">{activeLocksCount}</p>
-            <p className="text-[11px] text-sky-600 font-semibold">Sessions holding slots</p>
+            <p className="text-2xl sm:text-3xl font-headline font-extrabold text-sky-700">{activeLocksCount}</p>
+            <p className="text-[11px] text-sky-600 font-semibold truncate">Sessions holding slots</p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-outline-variant/50 shadow-sm space-y-2">
+          <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-outline-variant/50 shadow-sm space-y-1.5 sm:space-y-2">
             <div className="flex justify-between items-center text-on-surface-variant font-headline font-bold text-xs uppercase tracking-wider">
-              <span>Monthly Revenue</span>
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
+              <span className="truncate">Monthly Revenue</span>
+              <TrendingUp className="w-4 h-4 text-emerald-600 shrink-0" />
             </div>
-            <p className="text-3xl font-headline font-extrabold text-emerald-700">₹{monthRevenue.toLocaleString()}</p>
-            <p className="text-[11px] text-on-surface-variant font-medium">{monthBookings.length} bookings this month</p>
+            <p className="text-2xl sm:text-3xl font-headline font-extrabold text-emerald-700">₹{monthRevenue.toLocaleString()}</p>
+            <p className="text-[11px] text-on-surface-variant font-medium truncate">{monthBookings.length} bookings this month</p>
           </div>
         </div>
 
@@ -349,7 +349,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onSwitchToCustomer }) => {
         </div>
 
         {/* Tab Content Views with Role Security Gate */}
-        <div className="bg-white rounded-2xl p-6 border border-outline-variant/50 shadow-sm">
+        <div className="bg-white rounded-2xl p-3 sm:p-5 md:p-6 border border-outline-variant/50 shadow-sm">
           {!hasAccessToTab(activeTab) ? (
             <div className="py-12 text-center space-y-4 max-w-md mx-auto">
               <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-xs">

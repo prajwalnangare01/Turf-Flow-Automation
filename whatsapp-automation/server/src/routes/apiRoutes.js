@@ -11,6 +11,7 @@ import { EmailService } from '../services/emailService.js';
 import { SmsService } from '../services/smsService.js';
 import { WhatsAppFormatter } from '../utils/whatsappFormatter.js';
 import { RazorpayService } from '../services/razorpayService.js';
+import { SupabaseService } from '../services/supabaseService.js';
 import { getSupabase } from '../data/supabaseClient.js';
 import { getVenueDateString } from '../utils/venueTime.js';
 import { ServerAuthService } from '../services/authService.js';

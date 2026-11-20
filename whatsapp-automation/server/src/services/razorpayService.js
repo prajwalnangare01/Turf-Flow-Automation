@@ -273,7 +273,7 @@ export class RazorpayService {
     }
 
     // Allow test simulated payments in development
-    if (process.env.NODE_ENV !== 'production' && (orderId.startsWith('order_sim_') || paymentId.startsWith('pay_sim_') || signature === 'test_sig')) {
+    if (process.env.NODE_ENV !== 'production' && signature === 'test_sig') {
       return true;
     }
 

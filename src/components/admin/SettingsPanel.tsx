@@ -38,7 +38,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
   // Venue Settings & Gate Pass Location QR States
   const [venueQrDataUrl, setVenueQrDataUrl] = useState<string>('');
   const [venueSuccessMsg, setVenueSuccessMsg] = useState<string | null>(null);
-  const [venueSuccessToast, setVenueSuccessToast] = useState<string | null>(null);
+  const [venueSuccessToast, setVenueSuccessToast] = useState<{ title: string; message: string } | null>(null);
 
   // Real-time Venue Location QR Code generation for testing & verification
   useEffect(() => {
@@ -162,24 +162,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
     }
   };
 
-  const handleSaveVenue = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (currentAdmin.role === 'staff') {
-      alert('Permission denied: Staff accounts cannot modify venue parameters. Only Owners and Managers can update venue settings.');
-      return;
-    }
-    const targetMapUrl = (venue.location_url || venue.google_maps_link || '').trim() || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
-    const updatedVenue = {
-      ...venue,
-      name: venue.name.trim(),
-      address: venue.address.trim(),
-      location_url: targetMapUrl,
-      google_maps_link: targetMapUrl
-    };
-
+  const syncVenueUpdate = async (updatedVenue: typeof venue) => {
     setVenue(updatedVenue);
     store.setVenue(updatedVenue);
-    AuditLogger.log(currentAdmin.id, 'UPDATE_VENUE_SETTINGS', 'Venue', venue.id, null, updatedVenue);
 
     // Sync to backend server
     try {
@@ -199,9 +184,118 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
     try {
       await SupabaseSyncService.syncVenueToSupabase(updatedVenue);
     } catch {}
+  };
 
-    setVenueSuccessToast('Venue settings, address, and Google Maps location link saved successfully!');
-    setVenueSuccessMsg('Venue settings, address, and Google Maps location QR link updated successfully!');
+  const handleSaveVenueIdentity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentAdmin.role === 'staff') {
+      alert('Permission denied: Staff accounts cannot modify venue parameters. Only Owners and Managers can update venue settings.');
+      return;
+    }
+    const updatedVenue = {
+      ...venue,
+      name: venue.name.trim(),
+      contact_phone: venue.contact_phone.trim()
+    };
+
+    await syncVenueUpdate(updatedVenue);
+    AuditLogger.log(currentAdmin.id, 'UPDATE_VENUE_IDENTITY', 'Venue', venue.id, null, {
+      name: updatedVenue.name,
+      contact_phone: updatedVenue.contact_phone
+    });
+
+    setVenueSuccessToast({
+      title: 'Venue Identity Saved',
+      message: 'Venue display name and helpdesk contact phone updated successfully!'
+    });
+    setVenueSuccessMsg('Venue display name and helpdesk contact phone updated successfully!');
+    setTimeout(() => setVenueSuccessMsg(null), 5000);
+  };
+
+  const handleSaveLocationQR = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentAdmin.role === 'staff') {
+      alert('Permission denied: Staff accounts cannot modify venue parameters. Only Owners and Managers can update venue settings.');
+      return;
+    }
+    const targetMapUrl = (venue.location_url || venue.google_maps_link || '').trim() || `https://maps.google.com/?q=${encodeURIComponent(venue.name + ', ' + venue.address)}`;
+    const updatedVenue = {
+      ...venue,
+      address: venue.address.trim(),
+      location_url: targetMapUrl,
+      google_maps_link: targetMapUrl
+    };
+
+    await syncVenueUpdate(updatedVenue);
+    AuditLogger.log(currentAdmin.id, 'UPDATE_VENUE_LOCATION', 'Venue', venue.id, null, {
+      address: updatedVenue.address,
+      location_url: targetMapUrl,
+      google_maps_link: targetMapUrl
+    });
+
+    setVenueSuccessToast({
+      title: 'Location & QR Saved',
+      message: 'Physical address and Google Maps location QR link updated successfully!'
+    });
+    setVenueSuccessMsg('Physical address and Google Maps location QR link updated successfully!');
+    setTimeout(() => setVenueSuccessMsg(null), 5000);
+  };
+
+  const handleSaveTaxBookingRules = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentAdmin.role === 'staff') {
+      alert('Permission denied: Staff accounts cannot modify venue parameters. Only Owners and Managers can update venue settings.');
+      return;
+    }
+    const updatedVenue = {
+      ...venue,
+      gst_number: (venue.gst_number || '').trim().toUpperCase(),
+      min_notice_minutes: Number(venue.min_notice_minutes) || 0,
+      max_advance_days: Number(venue.max_advance_days) || 14
+    };
+
+    await syncVenueUpdate(updatedVenue);
+    AuditLogger.log(currentAdmin.id, 'UPDATE_TAX_BOOKING_RULES', 'Venue', venue.id, null, {
+      gst_number: updatedVenue.gst_number,
+      min_notice_minutes: updatedVenue.min_notice_minutes,
+      max_advance_days: updatedVenue.max_advance_days
+    });
+
+    setVenueSuccessToast({
+      title: 'Tax & Booking Rules Saved',
+      message: 'GST details, minimum notice, and advance booking rules updated successfully!'
+    });
+    setVenueSuccessMsg('GST details, minimum notice, and advance booking rules updated successfully!');
+    setTimeout(() => setVenueSuccessMsg(null), 5000);
+  };
+
+  const handleSaveNotificationSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentAdmin.role === 'staff') {
+      alert('Permission denied: Staff accounts cannot modify venue parameters. Only Owners and Managers can update venue settings.');
+      return;
+    }
+    const updatedVenue = {
+      ...venue,
+      whatsapp_enabled: Boolean(venue.whatsapp_enabled),
+      sms_fallback_enabled: Boolean(venue.sms_fallback_enabled),
+      email_enabled: venue.email_enabled !== false,
+      email_sender: (venue.email_sender || '').trim() || 'TurfFlow Arena <rajupainter84688@gmail.com>'
+    };
+
+    await syncVenueUpdate(updatedVenue);
+    AuditLogger.log(currentAdmin.id, 'UPDATE_NOTIFICATION_SETTINGS', 'Venue', venue.id, null, {
+      whatsapp_enabled: updatedVenue.whatsapp_enabled,
+      sms_fallback_enabled: updatedVenue.sms_fallback_enabled,
+      email_enabled: updatedVenue.email_enabled,
+      email_sender: updatedVenue.email_sender
+    });
+
+    setVenueSuccessToast({
+      title: 'Notification Settings Saved',
+      message: 'Notification channels and SMTP sender profile updated successfully!'
+    });
+    setVenueSuccessMsg('Notification channels and SMTP sender profile updated successfully!');
     setTimeout(() => setVenueSuccessMsg(null), 5000);
   };
 
@@ -307,7 +401,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
     <div className="space-y-6 max-w-4xl text-on-surface">
       
       {/* SECTION 1: CANCELLATION & REFUND MECHANISM CONTROL */}
-      <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/40 space-y-5">
+      <div className="bg-surface-container-low p-3.5 sm:p-5 md:p-6 rounded-2xl border border-outline-variant/40 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/30 pb-3">
           <div>
             <h2 className="font-headline font-bold text-lg text-primary flex items-center gap-2">
@@ -458,26 +552,32 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
 
         {/* Active Policy Tiers Table */}
         <div className="space-y-3">
-          <span className="font-headline font-bold text-xs uppercase tracking-wider text-on-surface-variant block">
-            Active Refund Window Tiers (Sorted by notice hours)
-          </span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-headline font-bold text-xs uppercase tracking-wider text-on-surface-variant block">
+              Active Refund Window Tiers (Sorted by notice hours)
+            </span>
+            <span className="text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {policies.length} {policies.length === 1 ? 'Tier' : 'Tiers'} Configured
+            </span>
+          </div>
 
           <div className="grid gap-2.5">
             {policies.map((p, idx) => (
               <div 
                 key={p.id}
-                className="bg-white p-3.5 rounded-xl border border-outline-variant/50 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
+                className="bg-white p-3.5 sm:p-4 rounded-xl border border-outline-variant/50 shadow-xs space-y-2.5 text-xs"
               >
-                <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0 font-mono">
-                    {idx + 1}
-                  </span>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <strong className="font-headline font-bold text-sm text-on-surface">
+                {/* Card Header: Index, Notice Threshold, Refund Badge, and Delete Trash Icon with Disablement Guard */}
+                <div className="flex items-center justify-between gap-2 border-b border-outline-variant/20 pb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0 font-mono">
+                      {idx + 1}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                      <strong className="font-headline font-bold text-xs sm:text-sm text-on-surface whitespace-nowrap">
                         ≥ {p.hours_before_start} Hours Notice
                       </strong>
-                      <span className={`px-2 py-0.5 rounded-full font-headline font-bold text-[11px] ${
+                      <span className={`px-2 py-0.5 rounded-full font-headline font-bold text-[10px] sm:text-[11px] shrink-0 ${
                         p.refund_percentage >= 100 
                           ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                           : p.refund_percentage > 0
@@ -487,49 +587,62 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
                         {p.refund_percentage}% Refund
                       </span>
                     </div>
-                    <span className="text-[11px] text-on-surface-variant font-medium block">
-                      {p.label || `Eligible for ${p.refund_percentage}% refund if cancelled ≥ ${p.hours_before_start}h prior`}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Inline Editing Controls */}
-                <div className="flex items-center gap-2 self-end md:self-auto">
-                  <div className="flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded-lg border border-outline-variant/30">
-                    <span className="text-[10px] font-bold text-on-surface-variant">Hours:</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={p.hours_before_start}
-                      disabled={currentAdmin.role === 'staff'}
-                      onChange={e => handleUpdatePolicyTierField(p.id, 'hours_before_start', e.target.value)}
-                      className="w-14 bg-white border border-outline-variant/40 rounded px-1.5 py-0.5 text-xs font-bold text-center"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded-lg border border-outline-variant/30">
-                    <span className="text-[10px] font-bold text-on-surface-variant">Refund %:</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={p.refund_percentage}
-                      disabled={currentAdmin.role === 'staff'}
-                      onChange={e => handleUpdatePolicyTierField(p.id, 'refund_percentage', e.target.value)}
-                      className="w-14 bg-white border border-outline-variant/40 rounded px-1.5 py-0.5 text-xs font-bold text-center text-primary"
-                    />
                   </div>
 
                   {currentAdmin.role !== 'staff' && (
                     <button
                       type="button"
                       onClick={() => handleDeletePolicyTier(p.id)}
-                      className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition"
-                      title="Delete this tier"
+                      disabled={policies.length <= 1}
+                      className={`p-1.5 rounded-lg transition shrink-0 ml-1.5 ${
+                        policies.length <= 1
+                          ? 'opacity-40 text-slate-400 cursor-not-allowed hover:bg-transparent'
+                          : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                      }`}
+                      title={policies.length <= 1 ? "At least 1 active tier is required" : "Delete this tier"}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
+                </div>
+
+                {/* Natural line wrapping for refund descriptions */}
+                <p className="text-[11px] text-on-surface-variant font-medium leading-relaxed break-words whitespace-normal">
+                  {p.label || `Eligible for ${p.refund_percentage}% refund if cancelled ≥ ${p.hours_before_start}h prior`}
+                </p>
+
+                {/* Restructured numeric inputs into a 2-column mobile grid with hidden browser spinners */}
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end sm:gap-3 pt-1">
+                  <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-surface-container-low px-2.5 py-1.5 rounded-lg border border-outline-variant/30">
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider shrink-0">Notice:</span>
+                    <div className="flex items-center justify-center flex-1 sm:flex-none">
+                      <input
+                        type="number"
+                        min={0}
+                        value={p.hours_before_start}
+                        disabled={currentAdmin.role === 'staff'}
+                        onChange={e => handleUpdatePolicyTierField(p.id, 'hours_before_start', e.target.value)}
+                        className="w-12 sm:w-14 bg-white border border-outline-variant/40 rounded px-1 py-0.5 text-xs font-bold text-center text-on-surface [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-[10px] text-on-surface-variant font-bold ml-1">h</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-surface-container-low px-2.5 py-1.5 rounded-lg border border-outline-variant/30">
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider shrink-0">Refund:</span>
+                    <div className="flex items-center justify-center flex-1 sm:flex-none">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={p.refund_percentage}
+                        disabled={currentAdmin.role === 'staff'}
+                        onChange={e => handleUpdatePolicyTierField(p.id, 'refund_percentage', e.target.value)}
+                        className="w-12 sm:w-14 bg-white border border-outline-variant/40 rounded px-1 py-0.5 text-xs font-bold text-center text-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-[10px] text-primary font-bold ml-1">%</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -602,7 +715,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
       </div>
 
       {/* SECTION 2: VENUE OPERATIONAL PARAMETERS */}
-      <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/40 space-y-4">
+      <div className="bg-surface-container-low p-3.5 sm:p-5 md:p-6 rounded-2xl border border-outline-variant/40 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/30 pb-3">
           <div>
             <h2 className="font-headline font-bold text-lg text-primary flex items-center gap-2">
@@ -624,8 +737,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
           </div>
         )}
 
-        <form onSubmit={handleSaveVenue} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Card 1: Save Venue Identity (Name & Helpdesk Phone) */}
+        <form onSubmit={handleSaveVenueIdentity} className="bg-white p-4 sm:p-5 rounded-xl border border-outline-variant/60 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-primary" />
+              <div>
+                <h3 className="font-headline font-bold text-sm text-on-surface">Venue Identity</h3>
+                <p className="text-[11px] text-on-surface-variant font-medium">Display name and primary helpdesk / owner phone number.</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0 self-start sm:self-auto">
+              Identity & Support
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div>
               <label className="block text-on-surface-variant font-headline font-bold mb-1">Venue Display Name *</label>
               <input
@@ -634,7 +761,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
                 value={venue.name}
                 disabled={currentAdmin.role === 'staff'}
                 onChange={e => setVenue({ ...venue, name: e.target.value })}
-                className="form-input"
+                className="form-input text-xs"
+                placeholder="e.g. TurfFlow Arena"
               />
             </div>
             <div>
@@ -645,162 +773,236 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
                 value={venue.contact_phone}
                 disabled={currentAdmin.role === 'staff'}
                 onChange={e => setVenue({ ...venue, contact_phone: e.target.value })}
-                className="form-input font-mono"
+                className="form-input font-mono text-xs"
+                placeholder="+91 98765 43210"
               />
             </div>
           </div>
 
-          {/* TURF LOCATION & GATE PASS GOOGLE MAPS QR CONFIGURATION */}
-          <div className="p-4 bg-white rounded-xl border border-outline-variant/60 shadow-xs space-y-3">
-            <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" />
-                <h3 className="font-headline font-bold text-sm text-on-surface">
-                  Turf Physical Address & Google Maps Navigation Link
-                </h3>
+          <div className="flex justify-end pt-2 border-t border-outline-variant/20">
+            {currentAdmin.role !== 'staff' && (
+              <button
+                type="submit"
+                className="btn-primary text-xs py-2 px-4 font-bold flex items-center gap-1.5 shadow-xs"
+              >
+                <Save className="w-3.5 h-3.5" /> Save Venue Identity
+              </button>
+            )}
+          </div>
+        </form>
+
+        {/* Card 2: Save Location & QR Link (Physical Address, Maps Link, Scannable Gate Pass QR) */}
+        <form onSubmit={handleSaveLocationQR} className="bg-white p-4 sm:p-5 rounded-xl border border-outline-variant/60 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              <div>
+                <h3 className="font-headline font-bold text-sm text-on-surface">Location & Gate Pass QR Link</h3>
+                <p className="text-[11px] text-on-surface-variant font-medium">Turf physical address and Google Maps navigation link encoded into Gate Passes.</p>
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <QrCode className="w-3 h-3 text-emerald-600" /> Embedded in Gate Pass
-              </span>
             </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0 self-start sm:self-auto">
+              <QrCode className="w-3 h-3 text-emerald-600" /> Embedded in Gate Pass
+            </span>
+          </div>
 
-            <p className="text-xs text-on-surface-variant leading-relaxed">
-              Admin Authority: Update the venue physical address and Google Maps directions link below. When updated, the new address and Google Maps link will appear across all Gate Passes, PDF receipts, WhatsApp notifications, and will be automatically encoded into the scannable Gate Pass Location QR Code.
-            </p>
+          <p className="text-xs text-on-surface-variant leading-relaxed">
+            Admin Authority: Update the venue physical address and Google Maps directions link below. When updated, the new address and Google Maps link will appear across all Gate Passes, PDF receipts, WhatsApp notifications, and will be automatically encoded into the scannable Gate Pass Location QR Code.
+          </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-1">
-              <div className="md:col-span-8 space-y-3">
-                {/* Physical Address */}
-                <div>
-                  <label className="block text-on-surface-variant font-headline font-bold mb-1">
-                    Venue Physical Address *
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-1 text-xs">
+            <div className="md:col-span-8 space-y-3">
+              {/* Physical Address */}
+              <div>
+                <label className="block text-on-surface-variant font-headline font-bold mb-1">
+                  Venue Physical Address *
+                </label>
+                <textarea
+                  rows={2}
+                  required
+                  value={venue.address}
+                  disabled={currentAdmin.role === 'staff'}
+                  onChange={e => setVenue({ ...venue, address: e.target.value })}
+                  placeholder="e.g. Plot 42, Sports Enclave, Near Viman Nagar, Pune, Maharashtra 411045"
+                  className="form-input text-xs resize-none"
+                />
+                <p className="text-[10.5px] text-on-surface-variant mt-0.5">
+                  Printed at the bottom of customer Gate Passes, PDF passes, tax receipts, and booking alerts.
+                </p>
+              </div>
+
+              {/* Google Maps Location URL */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-on-surface-variant font-headline font-bold">
+                    Google Maps Location Link (URL) *
                   </label>
-                  <textarea
-                    rows={2}
-                    required
-                    value={venue.address}
-                    disabled={currentAdmin.role === 'staff'}
-                    onChange={e => setVenue({ ...venue, address: e.target.value })}
-                    placeholder="e.g. Plot 42, Sports Enclave, Near Viman Nagar, Pune, Maharashtra 411045"
-                    className="form-input text-xs resize-none"
-                  />
-                  <p className="text-[10.5px] text-on-surface-variant mt-0.5">
-                    Printed at the bottom of customer Gate Passes, PDF passes, tax receipts, and booking alerts.
-                  </p>
+                  {(venue.location_url || venue.google_maps_link) && (
+                    <a
+                      href={venue.location_url || venue.google_maps_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10.5px] font-bold text-primary hover:underline flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Test in Google Maps
+                    </a>
+                  )}
                 </div>
-
-                {/* Google Maps Location URL */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-on-surface-variant font-headline font-bold">
-                      Google Maps Location Link (URL) *
-                    </label>
-                    {(venue.location_url || venue.google_maps_link) && (
-                      <a
-                        href={venue.location_url || venue.google_maps_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10.5px] font-bold text-primary hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3 h-3" /> Test in Google Maps
-                      </a>
-                    )}
-                  </div>
-                  <input
-                    type="url"
-                    required
-                    value={venue.location_url || venue.google_maps_link || ''}
-                    disabled={currentAdmin.role === 'staff'}
-                    onChange={e => setVenue({ 
-                      ...venue, 
-                      location_url: e.target.value,
-                      google_maps_link: e.target.value 
-                    })}
-                    placeholder="https://maps.google.com/?q=18.5204,73.8567"
-                    className="form-input text-xs font-mono"
-                  />
-                  <p className="text-[10.5px] text-on-surface-variant mt-0.5">
-                    This exact Google Maps link is encoded into the Gate Pass QR code. Scanning the QR code with any mobile camera immediately opens Google Maps navigation.
-                  </p>
-                </div>
-              </div>
-
-              {/* Real-time Location QR Code Preview */}
-              <div className="md:col-span-4 bg-surface-container-low rounded-xl p-3.5 border border-outline-variant/40 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1 flex items-center gap-1">
-                  <QrCode className="w-3 h-3 text-primary" /> Live Gate Pass QR
-                </span>
-                {venueQrDataUrl ? (
-                  <div className="p-1.5 bg-white rounded-lg border border-outline-variant/40 shadow-2xs my-1">
-                    <img 
-                      src={venueQrDataUrl} 
-                      alt="Turf Location QR Code" 
-                      className="w-24 h-24 sm:w-28 sm:h-28 object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-24 h-24 bg-surface-container rounded-lg flex items-center justify-center border border-dashed border-outline-variant/40 my-1">
-                    <QrCode className="w-8 h-8 text-on-surface-variant/40 animate-pulse" />
-                  </div>
-                )}
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 mt-1">
-                  Gate Pass QR Ready
-                </span>
-                <span className="text-[9.5px] text-on-surface-variant mt-1 leading-tight">
-                  Scan with your phone to test navigation directly to the turf.
-                </span>
+                <input
+                  type="url"
+                  required
+                  value={venue.location_url || venue.google_maps_link || ''}
+                  disabled={currentAdmin.role === 'staff'}
+                  onChange={e => setVenue({ 
+                    ...venue, 
+                    location_url: e.target.value,
+                    google_maps_link: e.target.value 
+                  })}
+                  placeholder="https://maps.google.com/?q=18.5204,73.8567"
+                  className="form-input text-xs font-mono"
+                />
+                <p className="text-[10.5px] text-on-surface-variant mt-0.5">
+                  This exact Google Maps link is encoded into the Gate Pass QR code. Scanning the QR code with any mobile camera immediately opens Google Maps navigation.
+                </p>
               </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-on-surface-variant font-headline font-bold mb-1">GST Identification Number</label>
-            <input
-              type="text"
-              value={venue.gst_number}
-              onChange={e => setVenue({ ...venue, gst_number: e.target.value })}
-              className="form-input font-mono uppercase"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-on-surface-variant font-headline font-bold mb-1">Min Notice (Minutes)</label>
-              <input
-                type="number"
-                value={venue.min_notice_minutes}
-                onChange={e => setVenue({ ...venue, min_notice_minutes: parseInt(e.target.value) || 0 })}
-                className="form-input"
-              />
-            </div>
-            <div>
-              <label className="block text-on-surface-variant font-headline font-bold mb-1">Max Advance Booking (Days)</label>
-              <input
-                type="number"
-                value={venue.max_advance_days}
-                onChange={e => setVenue({ ...venue, max_advance_days: parseInt(e.target.value) || 14 })}
-                className="form-input"
-              />
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-outline-variant/30 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="font-headline font-bold text-sm text-on-surface">Outbound Notification Channels</p>
-              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                EmailService.isResendConfigured()
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  : 'bg-amber-100 text-amber-800 border border-amber-300'
-              }`}>
-                {EmailService.isResendConfigured() ? '⚡ Nodemailer SMTP Active' : '🧪 SMTP Simulation Mode'}
+            {/* Real-time Location QR Code Preview */}
+            <div className="md:col-span-4 bg-surface-container-low rounded-xl p-3.5 border border-outline-variant/40 flex flex-col items-center justify-center text-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1 flex items-center gap-1">
+                <QrCode className="w-3 h-3 text-primary" /> Live Gate Pass QR
+              </span>
+              {venueQrDataUrl ? (
+                <div className="p-1.5 bg-white rounded-lg border border-outline-variant/40 shadow-2xs my-1">
+                  <img 
+                    src={venueQrDataUrl} 
+                    alt="Turf Location QR Code" 
+                    className="w-24 h-24 sm:w-28 sm:h-28 object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-24 h-24 bg-surface-container rounded-lg flex items-center justify-center border border-dashed border-outline-variant/40 my-1">
+                  <QrCode className="w-8 h-8 text-on-surface-variant/40 animate-pulse" />
+                </div>
+              )}
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 mt-1">
+                Gate Pass QR Ready
+              </span>
+              <span className="text-[9.5px] text-on-surface-variant mt-1 leading-tight">
+                Scan with your phone to test navigation directly to the turf.
               </span>
             </div>
+          </div>
 
+          <div className="flex justify-end pt-2 border-t border-outline-variant/20">
+            {currentAdmin.role !== 'staff' && (
+              <button
+                type="submit"
+                className="btn-primary text-xs py-2 px-4 font-bold flex items-center gap-1.5 shadow-xs"
+              >
+                <Save className="w-3.5 h-3.5" /> Save Location & QR Link
+              </button>
+            )}
+          </div>
+        </form>
+
+        {/* Card 3: Save Tax & Booking Rules (GST Number, Min Notice, Max Advance Days) */}
+        <form onSubmit={handleSaveTaxBookingRules} className="bg-white p-4 sm:p-5 rounded-xl border border-outline-variant/60 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
+              <div>
+                <h3 className="font-headline font-bold text-sm text-on-surface">Tax & Booking Rules</h3>
+                <p className="text-[11px] text-on-surface-variant font-medium">GST registration number, minimum booking notice, and advance scheduling window.</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full shrink-0 self-start sm:self-auto">
+              Compliance & Rules
+            </span>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            <div>
+              <label className="block text-on-surface-variant font-headline font-bold mb-1">GST Identification Number</label>
+              <input
+                type="text"
+                value={venue.gst_number || ''}
+                disabled={currentAdmin.role === 'staff'}
+                onChange={e => setVenue({ ...venue, gst_number: e.target.value })}
+                placeholder="e.g. 27ABCDE1234F1Z5"
+                className="form-input font-mono uppercase text-xs"
+              />
+              <p className="text-[10px] text-on-surface-variant mt-0.5">Printed on invoices and tax receipts.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-on-surface-variant font-headline font-bold mb-1">Min Notice (Minutes)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={venue.min_notice_minutes}
+                  disabled={currentAdmin.role === 'staff'}
+                  onChange={e => setVenue({ ...venue, min_notice_minutes: parseInt(e.target.value) || 0 })}
+                  className="form-input text-xs"
+                  placeholder="e.g. 30"
+                />
+                <p className="text-[10px] text-on-surface-variant mt-0.5">Minimum advance notice required to book a slot.</p>
+              </div>
+              <div>
+                <label className="block text-on-surface-variant font-headline font-bold mb-1">Max Advance Booking (Days)</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={venue.max_advance_days}
+                  disabled={currentAdmin.role === 'staff'}
+                  onChange={e => setVenue({ ...venue, max_advance_days: parseInt(e.target.value) || 14 })}
+                  className="form-input text-xs"
+                  placeholder="e.g. 14"
+                />
+                <p className="text-[10px] text-on-surface-variant mt-0.5">Maximum days into future customers can reserve.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-outline-variant/20">
+            {currentAdmin.role !== 'staff' && (
+              <button
+                type="submit"
+                className="btn-primary text-xs py-2 px-4 font-bold flex items-center gap-1.5 shadow-xs"
+              >
+                <Save className="w-3.5 h-3.5" /> Save Tax & Booking Rules
+              </button>
+            )}
+          </div>
+        </form>
+
+        {/* Card 4: Save Notification Settings (WhatsApp, SMS fallback, Email channels, and SMTP sender profile) */}
+        <form onSubmit={handleSaveNotificationSettings} className="bg-white p-4 sm:p-5 rounded-xl border border-outline-variant/60 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              <div>
+                <h3 className="font-headline font-bold text-sm text-on-surface">Notification Settings</h3>
+                <p className="text-[11px] text-on-surface-variant font-medium">WhatsApp, SMS fallback, Nodemailer email channels, and SMTP sender profile.</p>
+              </div>
+            </div>
+            <span className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0 self-start sm:self-auto ${
+              EmailService.isResendConfigured()
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                : 'bg-amber-100 text-amber-800 border border-amber-300'
+            }`}>
+              {EmailService.isResendConfigured() ? '⚡ Nodemailer SMTP Active' : '🧪 SMTP Simulation Mode'}
+            </span>
+          </div>
+
+          <div className="space-y-3 text-xs">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <label className="flex items-center gap-2 font-medium text-xs cursor-pointer p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/30">
                 <input
                   type="checkbox"
                   checked={venue.whatsapp_enabled}
+                  disabled={currentAdmin.role === 'staff'}
                   onChange={e => setVenue({ ...venue, whatsapp_enabled: e.target.checked })}
                   className="rounded accent-primary"
                 />
@@ -811,6 +1013,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
                 <input
                   type="checkbox"
                   checked={venue.sms_fallback_enabled}
+                  disabled={currentAdmin.role === 'staff'}
                   onChange={e => setVenue({ ...venue, sms_fallback_enabled: e.target.checked })}
                   className="rounded accent-primary"
                 />
@@ -821,6 +1024,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
                 <input
                   type="checkbox"
                   checked={venue.email_enabled !== false}
+                  disabled={currentAdmin.role === 'staff'}
                   onChange={e => setVenue({ ...venue, email_enabled: e.target.checked })}
                   className="rounded accent-primary"
                 />
@@ -833,11 +1037,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-                    SMTP From / Sender Address
+                    SMTP From / Sender Profile Address
                   </label>
                   <input
                     type="text"
                     value={venue.email_sender || 'TurfFlow Arena <rajupainter84688@gmail.com>'}
+                    disabled={currentAdmin.role === 'staff'}
                     onChange={e => setVenue({ ...venue, email_sender: e.target.value })}
                     placeholder="TurfFlow Arena <rajupainter84688@gmail.com>"
                     className="form-input text-xs"
@@ -910,7 +1115,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
             </div>
           </div>
 
-          {/* 6. Supabase Cloud Database & Realtime Sync Card */}
+          <div className="flex justify-end pt-2 border-t border-outline-variant/20">
+            {currentAdmin.role !== 'staff' && (
+              <button
+                type="submit"
+                className="btn-primary text-xs py-2 px-4 font-bold flex items-center gap-1.5 shadow-xs"
+              >
+                <Save className="w-3.5 h-3.5" /> Save Notification Settings
+              </button>
+            )}
+          </div>
+        </form>
+
+        {/* 5. Supabase Cloud Database & Realtime Sync Card */}
           <div className="card p-6 border-slate-200/80 bg-white/95 shadow-sm space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
@@ -1128,21 +1345,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
               Clicking <b>Clear Database</b> opens a secure confirmation modal with options to either wipe operational transaction data (keeping your pitches & sports setups intact) or execute a full factory reset.
             </p>
           </div>
-
-          <div className="pt-3 flex gap-3">
-            <button type="submit" className="btn-primary text-xs px-6 py-2.5 font-headline font-bold flex items-center gap-1.5 shadow-sm">
-              <Save className="w-4 h-4" /> Save Configuration
-            </button>
-
-            <button
-              type="button"
-              onClick={handleResetDatabase}
-              className="btn-secondary text-xs px-4 py-2.5 font-bold text-red-700 hover:bg-red-50 border-red-200 flex items-center gap-1.5 ml-auto cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4 text-red-600" /> Clear Database
-            </button>
-          </div>
-        </form>
       </div>
 
       <ClearDatabaseModal
@@ -1160,8 +1362,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentAdmin, onOp
 
       <Toast
         isOpen={Boolean(venueSuccessToast)}
-        title="Configuration Saved"
-        message={venueSuccessToast || ''}
+        title={venueSuccessToast?.title || "Configuration Saved"}
+        message={venueSuccessToast?.message || ''}
         type="success"
         onClose={() => setVenueSuccessToast(null)}
       />
